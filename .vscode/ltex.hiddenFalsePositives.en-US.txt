@@ -1,4 +1,0 @@
-{
-    "rule": "EN_COMPOUNDS",
-    "sentence": "^\\QWhile there have been many advanced implementations of visual SLAM over the last decade, very few of them have focused on distributed multi-agent systems, and instead focus on single-agent (e.g. ORB-SLAM3) or centralized multi-agent systems (e.g. CCM-SLAM).\\E$"
-}

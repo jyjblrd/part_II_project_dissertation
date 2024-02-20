@@ -1,8 +1,49 @@
+% Well-motivated project with success criteria well-justified.
+
 \label{sec:1}
+Visual Simultaneous Localization and Mapping (visual SLAM) serves as the foundation of countless modern technologies, with self driving cars, augmented reality devices and autonomous drones just being a few examples. By using purely visual inputs, visual SLAM is able to create a 3D map of the surroundings while also localizing the camera's position within this map in real time.
 
-Introduction...
+Unlike other SLAM systems which may use expensive and heavy sensor such as LIDAR, RGB-Depth cameras or Radar, visual SLAM only requires the ubiquitous camera sensor, allowing the technology to be used in many commercial applications such as Google's ARCore\footnotemark[1], Boston Dynamic's GraphNav system used on their robot Spot\footnotemark[2], and several models of DJI quadcopters\footnotemark[3] making this a particually practical field of research.
 
-\section{Introduction Section 1}
+\footnotetext[1]{https://developers.google.com/ar/develop/fundamentals}
+\footnotetext[2]{https://support.bostondynamics.com/s/article/GraphNav-Technical-Summary}
+\footnotetext[3]{DOI: 10.1016/j.vrih.2019.09.002}
+
+\section{Relevant Work}
 \label{sec:1.1}
+While there have been many advanced implementations of visual SLAM over the last decade, very few of them have focused on distributed multi-agent systems, instead focusing on single-agent or centralized multi-agent systems. ORB-SLAM3 \autocite{ORBSLAM3_TRO} is perhaps the most popular single-agent SLAM system, and often ranks at the top of benchmarks in a variety of environments \autocite{DBLP:journals/corr/abs-2108-01654}, however it is fundimentally a single-agent system with no considerations in place for collaboration amoung peers. Out of the few multi-agent systems that do exist, the majority of them require a centralized server to manage communications between the agents and perform map merging, such as CCM-SLAM(2019) \autocite{schmuck2019ccm} and COVINS(2021) \autocite{schmuck2021covins} amoung many others.
 
-Introduction Section 1... 
+todo: add comparison table?
+
+\section{Motivation}
+\label{sec:1.2}
+Multi-robot systems are only becoming more common as automation in numerous fields continues to grow, such as self driving cars, drone swarms and warehouse robots. These systems require the agents to understand the world around them, as know each other's locations within that world for collision avoidance. This task is often acheived with technologies such as GPS or motion capture setups, however we can not assume that all environments will have access to these systems. A few emerging examples include: \noparskip
+\smallbreak
+{
+    \begin{itemize}[nosep]
+        \item Search and rescue operations in large indoor systems, assisted by drone swarms.
+        \item Self driving cars in underground road networks.
+        \item Multi-agent cave/subsea exploration.
+    \end{itemize}
+}
+
+These are scenarios where multi-agent SLAM is able to assist, as it enables us to build a map of an unknown environment and keep agents aware of their relative poses. However, as noted in section \ref{sec:1.1}, the majority of existing multi-agent visual SLAM implementations are centralized systems, requiring the agents to maintain reliable communications with the central server in order to operate. This is somewhat counterintuitive, as environments which don't have access to GPS or motion capture systems are more than likely to also have very poor communication channels -- greatly limiting the use cases of these centralized multi-agent SLAM systems.
+
+Naturally, this leaves us with distributed multi-agent visual SLAM systems which do not rely on a centralized management server, allowing the agents to be used in environments where network infrastructure may be lacking. Instead of a central node, the agents are able to communicate peer-to-peer when they come within close proximity with one another.
+
+It is easy to see the broad reaching uses cases this opens up. Agents will be able to explore sections of the world independently or in small teams, sharing new world locations with their peers as they come into communication range using an ad-hoc network. Agents will only know their peer's locations when they are within communication range, but this is sufficient if we only need the relative position for collision avoidance (as is common in multi-robot systems).
+
+\textbf{My project implements a distributed multi-agent visual SLAM system, where agents are able to share information with each other to enable more accurate localization, relative positioning, and collaborative map building.}
+
+\section{Project Overview}
+\label{sec:1.3}
+In this project, I: \noparskip
+{
+    \begin{enumerate}
+        \item Design and implement a distributed multi-agent visual SLAM system that is capable of localization, relative pose estimation and  collaborative mapping, all while being tolerant to degraded network conditions and not reliant on any one single leader agent.
+        \item Create a simulation environment for testing and evaluating my system locally.
+        \item Evaluate the performance of my system on standardized datasets, comparing its performance to other visual SLAM systems.
+        \item TODO: Deploy my system on physical robots, demonstrating the practical use cases of this system and benchmarking real world performance.
+        \item TODO: Map compression algorithms?
+    \end{enumerate}
+}
