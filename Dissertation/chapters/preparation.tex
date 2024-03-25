@@ -11,51 +11,84 @@
 \label{sec:2}
 
 \section{Starting Point}
-\label{sec:2.1}
-As noted in the \hyperref[sec:relevant-work]{\textit{Relevant Work}} section, visual SLAM systems are a mature and well researched subfield of Computer Science with many advanced implementations. To avoid spending the majority of my time re-implementing a visual SLAM system from scratch, I instead used a \textbf{single-agent} visual SLAM implementation as the starting point for my project. This has allowed me to focus my efforts on the distributed multi-agent aspect of my project, which I believe is novel and under-researched aspect in the field.
+\label{sec:starting-point}
+As noted in the \hyperref[sec:relevant-work]{\textit{Relevant Work}} section, visual SLAM systems are a mature and well researched subfield of Computer Science with many advanced implementations. To avoid spending the majority of my effort re-implementing a visual SLAM system from scratch, I instead used a \textbf{single-agent} visual SLAM implementation as the starting point for my project. The thinking behind this decision was that it would allow me to focus my efforts on the distributed multi-agent aspect of this project, which I believe is novel and under-researched aspect in the field.
 
-I chose to use ORB-SLAM 3 as the single agent SLAM system to base my system on top of, as its researchers released code alongside their paper. I primarily utilized the system's visual odometry (VO) front end and helper functions from the backend to perform operations such as bundle adjustment.
+I chose ORB-SLAM 3 as the single agent SLAM system to base my system on top of, as its researchers released code alongside their paper. I primarily utilized the system's visual odometry (VO) front end and helper functions from the backend to perform operations such as bundle adjustment.
 
-However, as I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was required to understand this extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system, as it was never designed to work in a multiagent context. In retrospect, it may have been easier if I had simply implemented a single agent SLAM system myself.
+However, as I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was still required to understand its extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system, as it was never designed to work in a multiagent context. In retrospect, using an existing single agent SLAM system as a foundation was not as much of a time-saver as I had initially hoped.
 
-Nevertheless, by using a cutting edge single-agent SLAM system as a foundation for my project, I have been able to create a distributed SLAM system that is accurate and performant enough to have real-world use cases.
+Nevertheless, using a cutting edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that is accurate and performant enough to have real-world use cases.
 
 At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autocite{ORBSLAM3_TRO} git repository\footnotemark[1] and explored the codebase. ORB-SLAM3 is licensed under GPL-3.0, and as such, I have open sourced my code under the same license\footnotemark[2].
 
 \footnotetext[1]{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}}
 \footnotetext[2]{\url{https://github.com/jyjblrd/part_II_project}}
 
-I have no prior experience working with SLAM systems, but I have done research on the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to try to prevent it being a duplication of prior work.
+I had no prior experience working with SLAM systems, but I had done research on the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it being a duplication of prior work.
 
 \section{Visual SLAM Background}
 \label{sec:visual-slam-background}
 Before developing a distributed multi-agent SLAM system, we must first understand the basics of a visual SLAM. This is a topic on which numerous books \autocite{gao2021introduction} and research papers \autocite{durrant2006simultaneous} have discussed in depth, which I will attempt to summarize here.
 
+\subsection{Problem Statement}
+\label{sec:visual-slam-problem-statement}
+
+
+\subsection{Visual Odometry}
+\label{sec:visual-slam-visual-odometry}
+
+
+\subsection{Feature Descriptors}
+\label{sec:visual-slam-feature-descriptors}
+
+% ...add more
+
+\subsection{Loop Closure}
+\label{sec:visual-slam-loop-closure}
+
+
 \section{ORB-SLAM 3}
-\label{sec:ORB-SLAM-3}
-ORB-SLAM 3 is a cutting edge single agent SLAM system, often ranking the highest in visual SLAM comparison papers. As noted in \hyperref[sec:starting-point]{\textit{Starting Point}} section, I used ORB-SLAM as my starting point, primarily for its mature visual odometry (VO) front end,
+\label{sec:orb-slam-3}
+ORB-SLAM 3 is a cutting edge single agent SLAM system, often ranking at the top of visual SLAM comparison papers. As noted in \hyperref[sec:starting-point]{\textit{Starting Point}} section, I used ORB-SLAM as my starting point, primarily for its mature visual odometry (VO) front end and backend helper functions.
 
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
+From the start, I knew that a well structured development plan would be essential to the successful implementation of this project. An entire suite of infrastructure had to be implemented to aid the development of my distributed SLAM system, including: \noparskip
+{
+    \begin{itemize}[nosep]
+        \item Simulation software
+        \item Saving and loading test cases
+        \item Motion control systems
+        \item Evaluation libraries
+    \end{itemize}
+}
+
+\subsection{Simulation software – Webots}
+\label{sec:webots-simulator}
+
+Robotics projects work in the physical domain, however testing in the real world requires a large amount of setup and infrastructure. To ensure fast iteration, I decided to use simulations for the majority of my development, allowing me to easily test my system in various environments and scenarios before committing to deploying it on physical robots. Additionally, it allowed me to record numerous test cases which I used as regression tests and benchmarks for my system throughout development.
+
+
 
 \subsection{Robot Operating System 2}
 \label{sec:ros-2}
-Robot Operating System (ROS) 2 is a popular development framework (not operating system!) used in robotics applications both in research and industry. ROS's primary purpose is to provide a middleware to facilitate reliable communication between independent processes, called \textit{nodes}. These nodes can be on the same device or on a device within the local area network, and may be written in C++ or Python. Nodes communicate by \textit{publishing} and \textit{subscribing} to different \textit{topics}.
+Robot Operating System (ROS) 2 is the glue holding everything together, allowing independent software processes and hardware to communicate through an abstracted messaging interface.
+
+ROS has long been the industry standard, being almost ubiquitous in both robotics research and the commercial sector. Confusingly, ROS is not an operating system at all, but instead a cross-platform development framework that provide a middleware to facilitate reliable communication between independent processes, called \textit{nodes}. These nodes can be on the same device or on a device within the local area network, and may be written in C++ or Python. Nodes communicate by \textit{publishing} and \textit{subscribing} to different \textit{topics}, allowing both peer-to-peer communication and broadcasting.
 
 This is best illustrated with an example. Below is a toy distributed SLAM system. Given agents $\{ \texttt{agent}_n \ | \ n \in \{1, 2\} \}$, each agent has a camera which publishes to the $\texttt{/agent}_n$\verb|/camera| topic. The $\texttt{SLAM\_Processor}_n$ node subscribes to the $\texttt{/agent}_n$\verb|/camera| topic, and performs simultaneous localization and mapping using the image stream. The $\texttt{SLAM\_Processor}_n$ node then publishes to the $\texttt{/agent}_n$\verb|/new_map_data| topic, which the other agent can subscribe to and use to improve to their local map.
 
 todo: add diagram
 
-Since every node is abstracted away behind the interface provided by the various topics, we can easily swap out nodes in this system. For example, we can easily substitute the real camera for a simulated camera to test our system in a virtual environment without having to change any other part of our system. This makes transitioning between the real and simulated world almost seamless, which I knew would be essential for this project as all the testing would be conducted in a simulated environment.
+Since every node is abstracted away behind the interface provided by the various topics, we can easily swap out nodes in this system. For example, we can substitute the real camera for a simulated camera to test our system in a virtual environment without having to change any other part of our system. This makes transitioning between the real and simulated world almost seamless, which I knew would be essential for this project as I planned to test my system in simulations before running it on physical robots.
 
-Furthermore, using the ROS framework allows my code to be far more portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system. This turns my project from simply being a nice codebase to something that anyone can take and run on their own robots.
+Furthermore, using the ROS framework allows my code to be far more portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system with minimal effort. This turns my project from simply being a nice codebase to something that anyone can take and run on their own robots.
 
 There are two versions of ROS: ROS 1 and ROS 2. ROS 2 has slightly less software support than ROS 1, but I chose to use it due to its better decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnotemark[1] specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
 
 \footnotetext[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}}
 
-\subsection{Webots Simulator}
-\label{sec:webots-simulator}
 
 \section{Datasets}
 \label{sec:datasets}
