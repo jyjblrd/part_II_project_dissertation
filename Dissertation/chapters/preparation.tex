@@ -69,9 +69,10 @@ From the start, I knew that a well structured development plan would be essentia
 
 Robotics projects work in the physical domain, however testing in the real world requires a large amount of setup and infrastructure. To ensure fast iteration, I decided to use simulations for the majority of my development, allowing me to easily test my system in various environments and scenarios before committing to deploying it on physical robots. Additionally, it allowed me to record numerous test cases which I used as regression tests and benchmarks for my system throughout development.
 
+TODO: ...
 
 
-\subsection{Robot Operating System 2}
+\subsection{Communication Middleware – Robot Operating System 2}
 \label{sec:ros-2}
 Robot Operating System (ROS) 2 is the glue holding everything together, allowing independent software processes and hardware to communicate through an abstracted messaging interface.
 
@@ -89,6 +90,22 @@ There are two versions of ROS: ROS 1 and ROS 2. ROS 2 has slightly less software
 
 \footnotetext[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}}
 
+
+\subsection{Simulation and Testing Infrastructure}
+\label{sec:simulation-and-testing-infrastructure}
+
+\subsection{Custom Evaluation Suite – Multi Agent EVO}
+\label{sec:multi-agent-evo}
+While there are several mature single agent SLAM evaluation tools, I found there to be a complete lack of evalation tools for multi agent SLAM systems. Therefore, I have developed an open source multi agent SLAM evaluation tool: \textit{Multi Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
+
+Beside the simple data structure and data ingestion modifications needed to allow EVO to process multi agent SLAM data, there is some additional nuance to evaluating data from multiple agents.
+
+Initially, all agents will be in separate reference frames until they explore an area previously seen by another agent, allowing them to merge their maps and share the same coordinate frame. We may also have cases where two independent groups of agents meet and merge maps, which requires multiple agent to simultaneously change coordinate frames. We also must note that these coordinate frames are part of the SIM(3) transformation group, which is composed of rotation, translation and uniform scale in 3 dimensional space (scale being necessitated by the scale ambiguity of monocular visual SLAM).
+
+Therefore, I have created a new data format to capture these changes in coordinate frames over time within our trajectory data, which Multi Agent EVO is able to ingest. This allows us to properly compare the multi agent SLAM trajectories to the ground truth data, giving us insights on how long it takes for agents to successfully merge maps, the accuracy of relative pose estimation, and much more.
+
+TODO: add graph illustrating this coordinate frame stuff
+TODO: perhaps list out all capabilities added
 
 \section{Datasets}
 \label{sec:datasets}
