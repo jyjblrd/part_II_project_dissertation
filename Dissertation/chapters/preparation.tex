@@ -90,25 +90,14 @@ There are two versions of ROS: ROS 1 and ROS 2. ROS 2 has slightly less software
 
 \footnotetext[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}}
 
+\subsection{Testing Infrastructure}
+\label{sec:testing-infrastructure}
 
-\subsection{Simulation and Testing Infrastructure}
-\label{sec:simulation-and-testing-infrastructure}
+\subsection{Docker Containers}
+\label{sec:docker-containers}
 
 \subsection{Visualization Tools}
 \label{sec:visualization-tools}
-
-\subsection{Custom Evaluation Suite – Multi Agent EVO}
-\label{sec:multi-agent-evo}
-While there are several mature single-agent SLAM evaluation tools, I found there to be a complete lack of evaluation tools for multi-agent SLAM systems. Therefore, I have developed an open-source multi-agent SLAM evaluation tool: \textit{Multi Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
-
-Besides the simple data structure and data ingestion modifications needed to allow EVO to process multi-agent SLAM data, there is some additional nuance to evaluating data from multiple agents.
-
-Initially, all agents will be in separate reference frames until they explore an area previously seen by another agent, allowing them to merge their maps and share the same coordinate frame. We may also have cases where two independent groups of agents meet and merge maps, which requires multiple agents to simultaneously change coordinate frames. We also must note that these coordinate frames are part of the SIM(3) transformation group, which is composed of rotation, translation, and uniform scale in 3-dimensional space (scale being necessitated by the scale ambiguity of monocular visual SLAM).
-
-Therefore, I have created a new data format to capture these changes in coordinate frames over time within our trajectory data, which Multi-Agent EVO is able to ingest. This allows us to properly compare the multi-agent SLAM trajectories to the ground truth data, giving us insights on how long it takes for agents to successfully merge maps, the accuracy of relative pose estimation, and much more.
-
-TODO: add graph illustrating this coordinate frame stuff
-TODO: perhaps list out all capabilities added
 
 \section{Datasets}
 \label{sec:datasets}

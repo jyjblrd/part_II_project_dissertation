@@ -17,5 +17,62 @@
 \section{Architectural Overview}
 \label{sec:architectural-overview}
 
-\section{Repository Overview}
+\subsection{Repository Overview}
 \label{sec:repository-overview}
+
+\section{SLAM System}
+\label{sec:slam-system}
+
+\subsection{Distributed System Manager}
+\label{sec:distributed-system-manager}
+
+\subsubsection{State Manager}
+\label{sec:state-manager}
+
+\subsubsection{Map Alignment Refiner}
+\label{sec:map-alignment-refiner}
+
+\subsubsection{Reference Frame Manager}
+\label{sec:reference-frame-manager}
+
+\subsubsection{Visualization Publisher}
+\label{sec:visualization-publisher}
+
+\subsection{Map Serialization and Deserialization}
+\label{sec:map-serialization-and-deserialization}
+
+\subsection{External Map Merge Finder}
+\label{sec:external-map-merge-finder}
+
+\subsection{External Map Merger}
+\label{sec:external-map-merger}
+
+\subsection{External Key Frame Inserter}
+\label{sec:external-key-frame-inserter}
+
+\section{Motion Controller}
+\label{sec:motion-controller}
+
+\section{Simulation Suite}
+\label{sec:simulation-suite}
+
+\section{Custom Evaluation Suite – Multi-Agent EVO}
+\label{sec:multi-agent-evo}
+While there are several mature single-agent SLAM evaluation tools, I found there to be a complete lack of evaluation tools for multi-agent SLAM systems. Therefore, I have developed an open-source multi-agent SLAM evaluation tool: \textit{Multi Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
+
+Besides the simple data structure and data ingestion modifications needed to allow EVO to process multi-agent SLAM data, there is some additional nuance to evaluating data from multiple agents.
+
+Initially, all agents will be in separate reference frames until they explore an area previously seen by another agent, allowing them to merge their maps and share the same coordinate frame. We may also have cases where two independent groups of agents meet and merge maps, which requires multiple agents to simultaneously change coordinate frames. We also must note that these coordinate frames are part of the SIM(3) transformation group, which is composed of rotation, translation, and uniform scale in 3-dimensional space (scale being necessitated by the scale ambiguity of monocular visual SLAM).
+
+Therefore, I have created a new data format to capture these changes in coordinate frames over time within our trajectory data, which Multi-Agent EVO is able to ingest. This allows us to properly compare the multi-agent SLAM trajectories to the ground truth data, giving us insights on how long it takes for agents to successfully merge maps, the accuracy of relative pose estimation, and much more.
+
+TODO: add graph illustrating this coordinate frame stuff
+TODO: perhaps list out all capabilities added
+
+\section{Real World Implementation}
+\label{sec:real-world-implementation}
+
+
+
+
+
