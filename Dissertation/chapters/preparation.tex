@@ -12,20 +12,20 @@
 
 \section{Starting Point}
 \label{sec:starting-point}
-As noted in the \hyperref[sec:relevant-work]{\textit{Relevant Work}} section, visual SLAM systems are a mature and well researched subfield of Computer Science with many advanced implementations. To avoid spending the majority of my effort re-implementing a visual SLAM system from scratch, I instead used a \textbf{single-agent} visual SLAM implementation as the starting point for my project. The thinking behind this decision was that it would allow me to focus my efforts on the distributed multi-agent aspect of this project, which I believe is novel and under-researched aspect in the field.
+As noted in the \hyperref[sec:relevant-work]{\textit{Relevant Work}} section, visual SLAM systems are a mature and well-researched subfield of Computer Science with many advanced implementations. To avoid spending the majority of my effort re-implementing a visual SLAM system from scratch, I instead used a \textbf{single-agent} visual SLAM implementation as the starting point for my project. The thinking behind this decision was that it would allow me to focus my efforts on the distributed multi-agent aspect of this project, which I believe is a novel and under-researched aspect of the field.
 
 I chose ORB-SLAM 3 as the single agent SLAM system to base my system on top of, as its researchers released code alongside their paper. I primarily utilized the system's visual odometry (VO) front end and helper functions from the backend to perform operations such as bundle adjustment.
 
-However, as I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was still required to understand its extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system, as it was never designed to work in a multiagent context. In retrospect, using an existing single agent SLAM system as a foundation was not as much of a time-saver as I had initially hoped.
+However, as I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was still required to understand its extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system, as it was never designed to work in a multi-agent context. In retrospect, using an existing single-agent SLAM system as a foundation was not as much of a time-saver as I had initially hoped.
 
-Nevertheless, using a cutting edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that is accurate and performant enough to have real-world use cases.
+Nevertheless, using a cutting-edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that is accurate and performant enough to have real-world use cases.
 
-At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autocite{ORBSLAM3_TRO} git repository\footnotemark[1] and explored the codebase. ORB-SLAM3 is licensed under GPL-3.0, and as such, I have open sourced my code under the same license\footnotemark[2].
+At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autocite{ORBSLAM3_TRO} git repository\footnotemark[1] and explored the codebase. ORB-SLAM3 is licensed under GPL-3.0, and as such, I have open-sourced my code under the same license\footnotemark[2].
 
 \footnotetext[1]{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}}
 \footnotetext[2]{\url{https://github.com/jyjblrd/part_II_project}}
 
-I had no prior experience working with SLAM systems, but I had done research on the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it being a duplication of prior work.
+I had no prior experience working with SLAM systems, but I had researched the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it from being a duplication of prior work.
 
 \section{Visual SLAM Background}
 \label{sec:visual-slam-background}
@@ -50,11 +50,11 @@ Before developing a distributed multi-agent SLAM system, we must first understan
 
 \section{ORB-SLAM 3}
 \label{sec:orb-slam-3}
-ORB-SLAM 3 is a cutting edge single agent SLAM system, often ranking at the top of visual SLAM comparison papers. As noted in \hyperref[sec:starting-point]{\textit{Starting Point}} section, I used ORB-SLAM as my starting point, primarily for its mature visual odometry (VO) front end and backend helper functions.
+ORB-SLAM 3 is a cutting edge single-agent SLAM system, often ranking at the top of visual SLAM comparison papers. As noted in \hyperref[sec:starting-point]{\textit{Starting Point}} section, I used ORB-SLAM as my starting point, primarily for its mature visual odometry (VO) front end and backend helper functions.
 
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
-From the start, I knew that a well structured development plan would be essential to the successful implementation of this project. An entire suite of infrastructure had to be implemented to aid the development of my distributed SLAM system, including: \noparskip
+From the start, I knew that a well-structured development plan would be essential to the successful implementation of this project. An entire suite of infrastructure had to be implemented to aid the development of my distributed SLAM system, including: \noparskip
 {
     \begin{itemize}[nosep]
         \item Simulation software
@@ -76,9 +76,9 @@ TODO: ...
 \label{sec:ros-2}
 Robot Operating System (ROS) 2 is the glue holding everything together, allowing independent software processes and hardware to communicate through an abstracted messaging interface.
 
-ROS has long been the industry standard, being almost ubiquitous in both robotics research and the commercial sector. Confusingly, ROS is not an operating system at all, but instead a cross-platform development framework that provide a middleware to facilitate reliable communication between independent processes, called \textit{nodes}. These nodes can be on the same device or on a device within the local area network, and may be written in C++ or Python. Nodes communicate by \textit{publishing} and \textit{subscribing} to different \textit{topics}, allowing both peer-to-peer communication and broadcasting.
+ROS has long been the industry standard, being almost ubiquitous in both robotics research and the commercial sector. Confusingly, ROS is not an operating system at all, but instead a cross-platform development framework that provides a middleware to facilitate reliable communication between independent processes called \textit{nodes}. These nodes can be on the same device or on a device within the local area network and may be written in C++ or Python. Nodes communicate by \textit{publishing} and \textit{subscribing} to different \textit{topics}, allowing both peer-to-peer communication and broadcasting.
 
-This is best illustrated with an example. Below is a toy distributed SLAM system. Given agents $\{ \texttt{agent}_n \ | \ n \in \{1, 2\} \}$, each agent has a camera which publishes to the $\texttt{/agent}_n$\verb|/camera| topic. The $\texttt{SLAM\_Processor}_n$ node subscribes to the $\texttt{/agent}_n$\verb|/camera| topic, and performs simultaneous localization and mapping using the image stream. The $\texttt{SLAM\_Processor}_n$ node then publishes to the $\texttt{/agent}_n$\verb|/new_map_data| topic, which the other agent can subscribe to and use to improve to their local map.
+This is best illustrated with an example. Below is a toy distributed SLAM system. Given agents $\{ \texttt{agent}_n \ | \ n \in \{1, 2\} \}$, each agent has a camera which publishes to the $\texttt{/agent}_n$\verb|/camera| topic. The $\texttt{SLAM\_Processor}_n$ node subscribes to the $\texttt{/agent}_n$\verb|/camera| topic, and performs simultaneous localization and mapping using the image stream. The $\texttt{SLAM\_Processor}_n$ node then publishes to the $\texttt{/agent}_n$\verb|/new_map_data| topic, which the other agent can subscribe to and use to improve their local map.
 
 todo: add diagram
 
@@ -94,15 +94,18 @@ There are two versions of ROS: ROS 1 and ROS 2. ROS 2 has slightly less software
 \subsection{Simulation and Testing Infrastructure}
 \label{sec:simulation-and-testing-infrastructure}
 
+\subsection{Visualization Tools}
+\label{sec:visualization-tools}
+
 \subsection{Custom Evaluation Suite – Multi Agent EVO}
 \label{sec:multi-agent-evo}
-While there are several mature single agent SLAM evaluation tools, I found there to be a complete lack of evalation tools for multi agent SLAM systems. Therefore, I have developed an open source multi agent SLAM evaluation tool: \textit{Multi Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
+While there are several mature single-agent SLAM evaluation tools, I found there to be a complete lack of evaluation tools for multi-agent SLAM systems. Therefore, I have developed an open-source multi-agent SLAM evaluation tool: \textit{Multi Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
 
-Beside the simple data structure and data ingestion modifications needed to allow EVO to process multi agent SLAM data, there is some additional nuance to evaluating data from multiple agents.
+Besides the simple data structure and data ingestion modifications needed to allow EVO to process multi-agent SLAM data, there is some additional nuance to evaluating data from multiple agents.
 
-Initially, all agents will be in separate reference frames until they explore an area previously seen by another agent, allowing them to merge their maps and share the same coordinate frame. We may also have cases where two independent groups of agents meet and merge maps, which requires multiple agent to simultaneously change coordinate frames. We also must note that these coordinate frames are part of the SIM(3) transformation group, which is composed of rotation, translation and uniform scale in 3 dimensional space (scale being necessitated by the scale ambiguity of monocular visual SLAM).
+Initially, all agents will be in separate reference frames until they explore an area previously seen by another agent, allowing them to merge their maps and share the same coordinate frame. We may also have cases where two independent groups of agents meet and merge maps, which requires multiple agents to simultaneously change coordinate frames. We also must note that these coordinate frames are part of the SIM(3) transformation group, which is composed of rotation, translation, and uniform scale in 3-dimensional space (scale being necessitated by the scale ambiguity of monocular visual SLAM).
 
-Therefore, I have created a new data format to capture these changes in coordinate frames over time within our trajectory data, which Multi Agent EVO is able to ingest. This allows us to properly compare the multi agent SLAM trajectories to the ground truth data, giving us insights on how long it takes for agents to successfully merge maps, the accuracy of relative pose estimation, and much more.
+Therefore, I have created a new data format to capture these changes in coordinate frames over time within our trajectory data, which Multi-Agent EVO is able to ingest. This allows us to properly compare the multi-agent SLAM trajectories to the ground truth data, giving us insights on how long it takes for agents to successfully merge maps, the accuracy of relative pose estimation, and much more.
 
 TODO: add graph illustrating this coordinate frame stuff
 TODO: perhaps list out all capabilities added
@@ -112,4 +115,10 @@ TODO: perhaps list out all capabilities added
 
 \section{Requirements Analysis}
 \label{sec:requirements-analysis}
+
+\subsection{Development Model}
+\label{sec:development-model}
+
+\subsection{Version Control and Testing}
+\label{sec:version-control-and-testing}
 
