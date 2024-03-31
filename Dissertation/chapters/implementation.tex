@@ -14,37 +14,82 @@
 
 \label{sec:3}
 
-\section{Architectural Overview}
+\section{Agent Architectural Overview}
 \label{sec:architectural-overview}
 
 \begin{figure}[h]
     \centering
     \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.2]{figures/agent_diagram.pdf}
-    \caption{Agent diagram.}
+    \caption{Agent diagram. Green arrows represent messages sent over ROS topics, while black arrows are internal communications within a node.}
     \label{fig:agent-diagram}
 \end{figure}
 
-\subsection{Repository Overview}
-\label{sec:repository-overview}
+\autoref{fig:agent-diagram} gives an architectural overview of an agent, showing how the \texttt{Abstract Robot}, \texttt{SLAM System} and \texttt{Motion Controller} ROS nodes interconnect.
 
-\section{Simulation Environment}
-\label{sec:simulation-environment}
+From a high level, we have an \texttt{Abstract Robot} node which provides an interface to the robot's hardware, as explained in \autoref{sec:ros-2}. This sends camera images to the \texttt{SLAM System} node, which builds a map of the world in collaboration with its peers. The \texttt{Motion Controller} node receives agent pose information from both the local \texttt{SLAM System} and the external peers to perform tasks such as collision avoidance by sending velocity commands back to the \texttt{Abstract Robot} node, closing the control loop.
+
+In the following sections we will explore these nodes in detail.
 
 \section{SLAM System}
 \label{sec:slam-system}
+The SLAM System node is the majority of this project's implementation. It processes monocular images from the camera to localize the agent while also collaboratively building up a map of the world with its peers. As discussed in \autoref{sec:starting-point}, my system is based on an existing single-agent SLAM system which performs the \texttt{Tracking} and \texttt{Mapping} tasks. While substantial modifications were made to the base single-agent system, I will generally focus on the decentralized layer I have built on top in the interest of space.
+
+\subsection{Decentralized System Manager}
+\label{sec:decentralized-system-manager}
+Decentralized collaborative SLAM systems have significantly more complexity than a single-agent or even centralized collaborative system, due to the complex interactions between agents as they merge maps, lose localization, or lose connection with the network. Therefore, a robust framework must be put in place to ensure the robustness and corectness of the system, which I have implemented in the \texttt{Decentralized System Manager} component.
+
+For the sake of simplicity, the following explainations will explore the relationship between just two agents: a \textit{local} and \textit{external} agent. However, this framework easily generalizes to a system with an arbritary number of agents when augmented by some simple rules set out in the \textit{\nameref{sec:generalizing-to-n-2-agent-systems}} Section.
+
+\subsubsection{State Manager}
+\label{sec:state-manager}
 
 \begin{figure}[h]
     \centering
     \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.2]{figures/slam_system_state_machine.pdf}
     \caption{SLAM system state machine for a single peer.}
-    \label{fig:agent-diagram}
+    \label{fig:state-machine}
 \end{figure}
 
-\subsection{Distributed System Manager}
-\label{sec:distributed-system-manager}
+Each agent's \texttt{Decentralized System Manager} maintains a state machine for every peer in the system, shown in \autoref{fig:state-machine}. All peers are initially in the \texttt{unmerged} state, meaning that they are in different coordinate frames and can not collaboratively build a map together. As the local agent starts to explore the same places as its peers, we are able to recognise the visual overlaps and merge their maps together, brining us to the \texttt{merged} state where the agents share the same coordinate frame and map, enabling relative positioning and collaborative map building.
 
-\subsubsection{State Manager}
-\label{sec:state-manager}
+\subsubsection{External Map Merge Finder}
+\label{sec:external-map-merge-finder}
+A naive approach to merging maps with an external agent is to constantly exchange our full maps, each time trying to identify is a map merge is possible. While simple, this approach clearly does not scale well from both a networking and computaitonal perspective, as maps are often \>1MB in size and computing a full map merge is extremely computationally expensive.
+
+Instead, we first identify if a map merge is even feasible by using visual words before attempting a full map merge. This elminates superfluous map merge attempts that have no chance of succeeding because the agents maps have no visual overlap.
+
+As the agents generate new key frames, we calculate the \hyperref[sec:visual-bag-of-words]{visual bag of words} seen by that key frame and send them to our peers over the \texttt{/new\_key\_frame\_bows} ROS topic. These visual words are significantly smaller than sending over the complete map, and enables agents to detect if there is a significant amount of visual overlap between its local map and the external agent's map. This is computed by \autoref{alg:map-merge-finder}.
+
+This method gives a recall of almost 100\%, at the cost of potentially lower precision. This is a worthwile tradeoff however, as it is essential to have very few false negatives so we can merge maps as soon as possible so the agents can begin collaborating and determine relative positioning. TODO: generate stats on this?
+
+TODO: generate stats on how much this cuts down on bandwith and computation
+
+\begin{algorithm}
+    \caption{Map merge finder using visual words. TODO: improve}
+    \label{alg:map-merge-finder}
+    \begin{algorithmic}[1]
+        \Require{$E$: Set containing external key frame's visual words}
+        \Ensure{$success$: Boolean value signalling if merge is possible based on visual words}
+        \State $(externalMergeScore,\ bestMatchKeyFrame) \gets CalculateMergeScore(E)$
+        \State $I \gets ComputeVisualWords(bestMatchKeyFrame)$
+        \State $(internalMergeScore,\ _) \gets CalculateMergeScore(I)$
+        \State $success \gets externalMergeScore \geq internalMergeScore$
+    \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{External Map Merger}
+\label{sec:external-map-merger}
+Once a potential map merge with the external agent is identified by the \hyperref[sec:external-map-merge-finder]{external map merge finder}, we can begin a full merge attempt. We first request the full map from the external agent through the \texttt{/get\_current\_map} ROS topic. Once the map is received, we deserialize it and place it into our \textit{map database} datastructure.
+
+From this point, we need to confirm that a map merge is possible using the full map data.
+
+TODO
+
+Given the external key frame $k_0$ whose visual words triggered this map merge attemp, we extract a \textit{local window} $K$ of key frames connected to $k_0$ in the covisibility graph.
+
+If the full map merge is ultimately successful, we broadcast a \texttt{/successfully\_merged} message to tell the external agent that we have successfully merged their map. The external agent will then move to the \texttt{merged} state and both agents will begin sharing key frames with eachother.
+
+It is important to note that this system requires only one agent to calculate the map merge, significantly reducing the computational overhead of map merging, especially in systems with many agents (further explained in \autoref{sec:generalizing-to-n-2-agent-systems}).
 
 \subsubsection{Map Alignment Refiner}
 \label{sec:map-alignment-refiner}
@@ -55,20 +100,17 @@
 \subsubsection{Visualization Publisher}
 \label{sec:visualization-publisher}
 
+\subsubsection{Losing Localization}
+\label{sec:losing-localization}
+
 \subsection{Map Serialization and Deserialization}
 \label{sec:map-serialization-and-deserialization}
-
-\subsection{External Map Merge Finder}
-\label{sec:external-map-merge-finder}
-
-\subsection{External Map Merger}
-\label{sec:external-map-merger}
 
 \subsection{External Key Frame Inserter}
 \label{sec:external-key-frame-inserter}
 
-\subsection{Keeping Coordinate Frames Consistant}
-\label{sec:keeping-coordinate-frames-consistant}
+\subsection{Generalizing to $N \geq 3$ Agent Systems}
+\label{sec:generalizing-to-n-2-agent-systems}
 
 \section{Motion Controller}
 \label{sec:motion-controller}
@@ -94,6 +136,12 @@ TODO: perhaps list out all capabilities added
 
 \section{Real World Implementation}
 \label{sec:real-world-implementation}
+
+\subsection{Repository Overview}
+\label{sec:repository-overview}
+
+\section{Simulation Environment}
+\label{sec:simulation-environment}
 
 
 

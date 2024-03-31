@@ -6,6 +6,8 @@
 \usepackage{amsmath, amssymb}
 \usepackage[utf8]{inputenc}
 \usepackage{titlesec}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 % code highlighting
 \usepackage{minted}
@@ -41,3 +43,9 @@
 \sloppy
 \clubpenalty1000%
 \widowpenalty1000%
+
+\newcommand{\algorithmautorefname}{Algorithm}
+
+
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
