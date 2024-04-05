@@ -26,19 +26,19 @@
 
 \autoref{fig:agent-diagram} gives an architectural overview of an agent, showing how the \texttt{Abstract Robot}, \texttt{SLAM System} and \texttt{Motion Controller} ROS nodes interconnect.
 
-From a high level, we have an \texttt{Abstract Robot} node which provides an interface to the robot's hardware, as explained in \autoref{sec:ros-2}. This sends camera images to the \texttt{SLAM System} node, which builds a map of the world in collaboration with its peers. The \texttt{Motion Controller} node receives agent pose information from both the local \texttt{SLAM System} and the external peers to perform tasks such as collision avoidance by sending velocity commands back to the \texttt{Abstract Robot} node, closing the control loop.
+From a high level, we have an \texttt{Abstract Robot} node that provides an interface to the robot's hardware, as explained in \autoref{sec:ros-2}. This sends camera images to the \texttt{SLAM System} node, which builds a map of the world in collaboration with its peers. The \texttt{Motion Controller} node receives agent pose information from both the local \texttt{SLAM System} and the external peers to perform tasks such as collision avoidance by sending velocity commands back to the \texttt{Abstract Robot} node, closing the control loop.
 
 In the following sections, we will explore these nodes in detail.
 
 \section{SLAM System}
 \label{sec:slam-system}
-The SLAM System node is the majority of this project's implementation. It processes monocular images from the camera to localize the agent while also collaboratively building up a map of the world with its peers. As discussed in \autoref{sec:starting-point}, my system is based on an existing single-agent SLAM system which performs the \texttt{Tracking} and \texttt{Mapping} tasks. While substantial modifications were made to the base single-agent system, I will generally focus on the decentralized layer I have built on top in the interest of space.
+The SLAM System node is the majority of this project's implementation. It processes monocular images from the camera to localize the agent while also collaboratively building up a map of the world with its peers. As discussed in \autoref{sec:starting-point}, my system is based on an existing single-agent SLAM system that performs the \texttt{Tracking} and \texttt{Mapping} tasks. While substantial modifications were made to the base single-agent system, I will generally focus on the decentralized layer I have built on top in the interest of space.
 
 \subsection{Decentralized System Manager}
 \label{sec:decentralized-system-manager}
 Decentralized collaborative SLAM systems have significantly more complexity than a single-agent or even centralized collaborative system, due to the complex interactions between agents as they merge maps, lose localization, or lose connection with the network. Therefore, a robust framework must be put in place to ensure the robustness and corectness of the system, which I have implemented in the \texttt{Decentralized System Manager} component.
 
-For the sake of simplicity, the following explanations will explore the interactions between just two agents: a \textit{local} and \textit{external} agent. However, this framework easily generalizes to a system with an arbitrary number of agents when augmented by some simple rules set out in the \textit{\nameref{sec:generalizing-to-n-geq-3-agent-systems}} Section.
+For the sake of simplicity, the following explanations will explore the interactions between just two agents: a \textit{local} and \textit{external} agent. In the \textit{\nameref{sec:generalizing-to-n-geq-3-agent-systems}} Section, we sill show how this easily generalizes to a system with an arbitrary number of agents when augmented by some simple rules.
 
 \subsubsection{State Manager}
 \label{sec:state-manager}
@@ -183,15 +183,82 @@ To remedy this problem, we continuously refine our map alignment using \nameref{
 
 \subsection{Map Serialization and Deserialization}
 \label{sec:map-serialization-and-deserialization}
+Map serialization and deserialization are essential and non-trivial components of this SLAM system, allowing agents to share their maps across the network. For this task, I used the Boost \autocite{boostLibrary} Serialization C++ library since it supports standard library collections and other common classes.
+
+As discussed in \autoref{sec:slam-system}, maps contain key frames and map points. Individually, these objects are relatively easy to serialize with boost – in fact, the single agent SLAM program my system is based on already supported saving and loading maps allowing me to leverage some of their serialization helper functions. To serialize these objects we simply need to define a serialization scheme for each custom class, describing which class variables should be serialized and which shouldn't. Strategically selecting only the parameters that need to be serialized allows us to cut back on communication overhead. For example, there is no need for us to serialize a key frame's raw image, as it is not used in the rest of our SLAM pipeline.
+
+Complexities arise when we try to serialize/deserialize the connections between these objects, especially when we are only sending map fragments. For example, if we send a new key frame $k$ and its map points $M_k$ to an external agent, due to the many-to-many relationship between key frames and map points, some of the map points in $M_k$ may have already been sent before. We can define $M_k = M_{k\_sent} \cup M_{k\_unsent}$, where $M_{k\_sent}$ are the map points that have already been sent to the external agent and $M_{k\_unsent}$ are the ones that have not. Map points in $M_{k\_sent}$ will need to be connected to $k$ when it is deserialized by the external agent, and map points in $M_{k\_unsent}$ will need to be sent to the external agent and connected to any existing keyframes in the external map that observe the map points.
+
+We manage these connections by giving every key frame and map point a universal unique identifier (UUID), allowing us to use these UUIDs as references to a specific object in our multi-agent system. The beauty of UUIDs is that they do not require a centralized server to assign a unique ID to every object. Instead, we can generate the unique IDs without any communication with our peers\footnote[1]{While not \textit{verifiablly} unique, UUIDs are unique within practical limits. A commonly cited anecdote is that it is far more likely for a cosmic ray to cause a bug than a UUID collision.}.
+
+TODO: add figure of this map fragment serialization and deserialization
+
+This method of using UUIDs as references is used to rebuild all connections after deserialization, including the keyframe-to-keyframe connections that build the co-visibility graph and many others which I have not had the space to discuss in this dissertation.
 
 \section{Motion Controller}
 \label{sec:motion-controller}
+While not a part of the core SLAM system, the motion controller node closes the control loop and demonstrates the real-world usability of my system. From a high level, the motion controller node consumes the local and external agents' poses and outputs a command velocity to the robot's movement system – all via ROS topics. For this project, I have implemented two different motion control systems which can be switched out seamlessly.
 
 \subsection{Follow The Leader}
 \label{sec:follow-the-leader}
+The "follow the leader" motion controller consists of two agents: one leader and one follower. The follower is given a position and rotation offset to the leader which it attempts to maintain as the leader is moved around.
+
+For example, you could set the follower to be 1 meter behind the leader and with a 180\textdegree{} rotational offset. This ensures that the leader and follower have no visual overlap, demonstrating that my SLAM system is truly building a shared map.
+
+Spinning the agents around in a circle demonstrates that the two agents' maps are properly merged and that the agents are using map points generated by an external agent to localize themselves, giving accurate relative positioning even when there is no visual overlap at any given moment.
+
+TODO: add figure of the map built
 
 \subsection{Multi-Agent Collision Avoidance}
 \label{sec:multi-agent-collision-avoidance}
+The "multi-agent collision avoidance" example is more complex, employing a non-linear model predictive controller (NMPC) to avoid collisions with both static and dynamic obstacles. My NMPC system is derived from \autocite{DBLP:journals/corr/KamelASN17} and is defined as follows:
+
+\subsubsection{Non-Linear Model Predictive Controller Formulation}
+\label{sec:nmpc-implementation-details}
+We assume an agent with current pose $\bm{p} \in \mathbb{R}^2$ and radius $r$. Firstly, we define our agent's control input $\bm{v_{cmd}}$ as a function describing its velocity over time. We can then define our agent's state $\bm{x}$ as the control input $\bm{v_{cmd}}$ applied to its current pose $\bm{p}$:
+
+\begin{equation}
+    \bm{x}(t) = \bm{p} + \int_{0}^{t} \bm{v_{cmd}}\ dt
+\end{equation}
+
+We can then solve the following minimization problem to find an optimal $\bm{v_{cmd}}$:
+\begin{equation}
+    \begin{aligned} \label{eq:nmpc-minimization-problem}
+         & \min_{\bm{v_{cmd}}} \int_{t=0}^{T} J_x(\bm{x}(t), \bm{x_{ref}}(t)) + J_s(\bm{x}(t)) + J_d(\bm{x}(t))\ dt \\
+         & \text{subject to } \bm{v_{min}} \leq \bm{v_{cmd}} \leq \bm{v_{max}}
+    \end{aligned}
+\end{equation}
+where $T$ is our horizon length, $\bm{x_{ref}}$ is our target trajectory, and $J_x$, $J_s$, $J_d$ are the cost functions for this system.
+
+Cost function $J_x$ rewards following the target trajectory $\bm{x_{ref}}$ and is shown below:
+\begin{equation}
+    J_x(\bm{x}, \bm{x_{ref}}) = \|\bm{x} - \bm{x_{ref}}\|^2
+\end{equation}
+
+$J_s$ and $J_d$ penalize collisions with static objects and dynamic objects respectively. They are defined as:
+\begin{flalign}
+    J_s(\bm{x}) & = \sum_{i=1}^{N_{static}} \frac{s_s*Q_s}{1 + \exp(d_i^{static} / s_s)}   \\
+    J_d(\bm{x}) & = \sum_{i=1}^{N_{dynamic}} \frac{s_d*Q_d}{1 + \exp(d_i^{dynamic} / s_d)}
+\end{flalign}
+where $d_i^{static}$ is the distance between the agent and the $i-th$ static obstacle, and $d_i^{dynamic}$ is the distance between the agent and the $i-th$ dynamic obstacle. For example, if the $i-th$ dynamic obstacle is another agent with radius $r$ then $d_i^{dynamic} = \|\bm{x}(t)-\bm{x_i}(t)\|^2 - r$. $Q_s>0$ and $Q_d>0$ are weights that define how far the agent stays away from static obstacles compared to dynamic ones.
+
+Additionally, we define $s_s$ and $s_d$ as a scale normalizing parameter that ensures the minima of $J_x + J_s$ and $J_x + J_d$ are greater than agent radius $r$ in the single obstacle case. Essentially, this ensures that the optimized trajectory of the agent never comes within radius $r$ of an obstacle unless it is being "squished" by two obstacles.
+
+To calculate $s_s$, we first find the positive minima $x_{min}$ of $J_x + J_s$ in the worst case where $d_i^{static} = J_x$ (ie. the static obstacle and $x_{ref}$ are in the same place), with $s=1$. This gives us $x_{min}$ as defined in \autoref{eq:x-min}. Our scaling factor can then be defined as $s_s = \frac{r}{x_{min}}$, which sets the positive minima of $J_x + J_s$ to be $r$ in the above situation. The calculation of $s_d$ is symmetric, simply using $Q_d$ instead of $Q_s$.
+
+\begin{equation} \label{eq:x-min}
+    x_{min} = \ln \left( \frac{\sqrt{Q_s^2-4Q_s}+Q_s}{2}-1 \right)
+\end{equation}
+
+The key benefit of these cost functions is that the optimal distance to obstacles of $r$ is invariant to parameters $Q_s$, $Q_d$, and $r$. This is in contrast to \autocite{DBLP:journals/corr/KamelASN17} which required you to retune the parameters $\kappa$ and $Q$ upon changing agent radius $r$, greatly slowing down development.
+
+TODO: add graph for cost functions, maybe a 2d surface showing the cost function
+
+\subsubsection{Implementation Details}
+\label{sec:nmpc-implementation-details}
+Solving the integral in \autoref{eq:nmpc-minimization-problem} is computationally inefficient, therefore we split our calculations into discrete time steps. The Sequential Least Squares Programming minimization method is used due to its robustness and ability to constrain the optimization space. We set parameters $Q_s = TODO$ and $Q_d = TODO$ to make the agent more adverse to approaching dynamic obstacles compared to static ones, as there is more uncertainty in the dynamic obstacle's location. To calculate the future locations of dynamic obstacles $x_i^{dynamic}$ we employ a simple constant velocity model.
+
+Our SLAM system does not use a depth camera or LiDaR, and therefore only produces a sparse map. Therefore, we need to define the location of static obstacles manually. Both static obstacles and the goal pose are set using interactive ROS markers, allowing them to be changed on the fly using software such as RViz.
 
 \section{Central Management Interface}
 \label{sec:central-management-interface}
