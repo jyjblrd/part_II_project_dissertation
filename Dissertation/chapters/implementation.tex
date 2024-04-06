@@ -81,15 +81,33 @@ TODO: generate stats on how much this cuts down on bandwidth and computation
 
 \subsubsection{External Map Merger}
 \label{sec:external-map-merger}
-Once a potential map merge with the external agent is identified by the \hyperref[sec:external-map-merge-finder]{external map merge finder}, we can begin a full merge attempt. We first request the full map from the external agent through the \texttt{/get\_current\_map} ROS topic. Once the map is received, we deserialize it and place it into our \textit{map database} data structure.
+Performing full map merges is perhaps the most improtant component of the decentralized SLAM system, as a bad map merge will make it impossible for agents to collaborate. Additionally, it is one of the most computationally intensive parts of this system, therefore, it has gone through numerous iterations to optimize performance and reduce map merge errors.
 
-From this point, we need to confirm that a map merge is possible using the full map data.
+The final version of the external map merger works as follows:
 
-TODO
+\begin{enumerate}
+    \item \textbf{Request external agent's full map.} \\
+          Once a potential map merge with the external agent is identified by the \hyperref[sec:external-map-merge-finder]{external map merge finder}, we can begin a full merge attempt. We first request the full map from the external agent through the \texttt{/get\_current\_map} ROS topic. Once the map is received, we deserialize it and place it into our \textit{map database} data structure as a seperate map.
+    \item \textbf{Confirm that a map merge is possible using the full map data.} \\
+          The visual word map merge finder works well considering its very low communication overhead, however we need to confirm that a map merge is actually possible using the full map data from both agents.
 
-Given the external key frame $k_0$ whose visual words triggered this map merge attempt, we extract a \textit{local window} $K$ of key frames connected to $k_0$ in the covisibility graph.
+          TODO
 
-If the full map merge is ultimately successful, we broadcast a \texttt{/successfully\_merged} message to tell the external agent that we have successfully merged their map. The external agent will then move to the \texttt{merged} state and both agents will begin sharing key frames with each other.
+          If we determine the merge to not be possible, we delete the external map from our map database and exit this process.
+    \item \textbf{Find the translation $T_{loc \rightarrow ext}$ that aligns the local map to the external map.} \\
+          TODO
+    \item \textbf{Apply translation $T_{loc \rightarrow ext}$ to our local map.} \\
+    \item \textbf{Move a subset of the external map's key frames and map points into our local map} \\
+          Given the external key frame $k_0$ whose visual words triggered this map merge attempt, we extract a \textit{local window} $K$ of key frames connected to $k_0$ in the covisibility graph.
+    \item \textbf{Merge local and external map points, connecting the maps} \\
+    \item \textbf{Run bundle adjustment to optimize map point and key frame positions.} \\
+    \item \textbf{Repeat steps 5-7 with the entirety of the external map.} \\
+    \item \textbf{Broadcast successful merge message.} \\
+          If the full map merge is ultimately successful, we broadcast a \texttt{/successfully\_merged} message to tell the external agent that we have successfully merged their map. The external agent will then move to the \texttt{merged} state and both agents will begin sharing key frames with each other.
+
+\end{enumerate}
+
+By the end of the merge process, the local agent will change its coordinate frame to that of the external agent.
 
 It is important to note that this system requires only one agent to calculate the map merge, significantly reducing the computational overhead of map merging, especially in systems with many agents (further explained in \autoref{sec:generalizing-to-n-geq-3-agent-systems}).
 
@@ -303,6 +321,11 @@ TODO: perhaps list out all capabilities added
 
 \section{Simulation Environment}
 \label{sec:simulation-environment}
+The \hyperref[sec:webots-simulator]{Webots Simulation Software} Section in the Preparation Chapter explains the motivation behind using a simulator. Essentially, leveraging simulations enabled much faster iteration cycles and the ability to test in a variety of environments. This section will focus on the implementation details of the simulation software.
+
+Webots is an open source 3D robotics simulator with realistic rendering, which is essential for testing a visual SLAM system. Webots can not be built for the ARM Ubuntu VM I used for development, therefore it had to be run on MacOS and the data was streamed to the Ubuntu VM through a websocket bridge developed by Webots.
+
+I then developed a ROS node which exposes the Webots cameras and agent controls as ROS topics, following the abstract robot interface specifications. This allowed my SLAM system to process the camera streams and the motion controller / central management interface to control the agent's movements.
 
 \section{Real World Implementation}
 \label{sec:real-world-implementation}
@@ -328,7 +351,7 @@ The ground truth for my real world experiments were provided by the Prorok Lab's
 \label{sec:external-camera-tracking}
 In addition to tracking the RoboMasters, we also track an external camera as it captures the experiment. Knowing the external camera's trajectory allows us to project 3D visualization data onto the recorded video as the camera moves around in real time, giving an augmented reality experience. This can be used to visualize the SLAM system's key frame and map point locations in the real world, or to overlay the SLAM system's predicted trajectory onto the video to see how it aligns with reality.
 
-To overlay our SLAM system's data on the video, we must first align the SLAM system and motion capture systems' coordinate frames. This needs to be done on every run, as monocular SLAM systems have an arbritary scale. We therefore use the Kabsch-Umeyama algorithm descirbed in \autoref{sec:kabsch-umeyama-algorithm} to align the trajectories captured by the motion capture system and SLAM system after enough data has been collected to create a successful alignment. Finally, use Foxglove studio to draw our 3D markers and project them on top of the moving camera's video stream.
+To overlay our SLAM system's data on the video, we must first align the SLAM system and motion capture systems' coordinate frames. This needs to be done on every run, as monocular SLAM systems have an arbitrary scale. We therefore use the Kabsch-Umeyama algorithm described in \autoref{sec:kabsch-umeyama-algorithm} to align the trajectories captured by the motion capture system and SLAM system after enough data has been collected to create a successful alignment. Finally, use Foxglove studio to draw our 3D markers and project them on top of the moving camera's video stream.
 
 TODO: talk about raspberry pi setup
 TODO: talk about the novelty of this sytem? is it novel? why is it useful?
