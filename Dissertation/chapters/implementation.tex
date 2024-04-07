@@ -60,7 +60,7 @@ A naive approach to merging maps with an external agent is to constantly exchang
 
 Instead, we first identify if a map merge is even feasible by using visual words before attempting a full map merge. This eliminates superfluous map merge attempts that have no chance of succeeding because the agents' maps have no visual overlap.
 
-As the agents generate new key frames, we calculate the \hyperref[sec:visual-bag-of-words]{visual bag of words} seen by that key frame and send them to our peers over the \texttt{/new\_key\_frame\_bows} ROS topic. These visual words are significantly smaller than sending over the complete map and enable agents to detect if there is a significant amount of visual overlap between its local map and the external agent's map. This is computed by \autoref{alg:map-merge-finder}.
+As the agents generate new key frames, we use DBoW2 \autocite{GalvezTRO12} to calculate the \hyperref[sec:visual-bag-of-words]{visual bag of words} seen by that key frame and send them to our peers over the \texttt{/new\_key\_frame\_bows} ROS topic. These visual words are significantly smaller than sending over the complete map and enable agents to detect if there is a significant amount of visual overlap between its local map and the external agent's map. This is computed by \autoref{alg:map-merge-finder}.
 
 This method gives a recall of almost 100\%, at the cost of potentially lower precision. This is a worthwhile tradeoff however, as it is essential to have very few false negatives so we can merge maps as soon as possible so the agents can begin collaborating and determine relative positioning. TODO: generate stats on this?
 
@@ -81,7 +81,7 @@ TODO: generate stats on how much this cuts down on bandwidth and computation
 
 \subsubsection{External Map Merger}
 \label{sec:external-map-merger}
-Performing full map merges is perhaps the most improtant component of the decentralized SLAM system, as a bad map merge will make it impossible for agents to collaborate. Additionally, it is one of the most computationally intensive parts of this system, therefore, it has gone through numerous iterations to optimize performance and reduce map merge errors.
+Performing full map merges is perhaps the most important component of the decentralized SLAM system, as a bad map merge will make it impossible for agents to collaborate. Additionally, it is one of the most computationally intensive parts of this system, therefore, it has gone through numerous iterations to optimize performance and reduce map merge errors.
 
 The final version of the external map merger works as follows:
 
@@ -109,7 +109,7 @@ The final version of the external map merger works as follows:
 
 By the end of the merge process, the local agent will change its coordinate frame to that of the external agent.
 
-It is important to note that this system requires only one agent to calculate the map merge, significantly reducing the computational overhead of map merging, especially in systems with many agents (further explained in \autoref{sec:generalizing-to-n-geq-3-agent-systems}).
+It is important to note that this system requires only one agent to identify and calculate the map merge, significantly reducing the computational overhead of map merging, especially in systems with many agents (further explained in \autoref{sec:generalizing-to-n-geq-3-agent-systems}).
 
 \subsubsection{Keeping Maps Merged}
 
