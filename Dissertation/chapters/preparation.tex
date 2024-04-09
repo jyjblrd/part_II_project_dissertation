@@ -136,11 +136,28 @@ There are two versions of ROS: ROS 1 and ROS 2. ROS 2 has slightly less software
 \subsection{Testing Infrastructure}
 \label{sec:testing-infrastructure}
 
-\subsection{Docker Containers}
-\label{sec:docker-containers}
-
 \subsection{Visualization Tools}
 \label{sec:visualization-tools}
+
+\subsection{Docker Containers}
+\label{sec:docker-containers}
+Docker containers are used on all physical deployments of my software, including the Cambridge RoboMasters used for real-world testing of my SLAM system and my Raspberry Pi Video Publisher platform which is used for custom dataset collection and augmented reality visualizations.
+
+Docker allows the software to be isolated in self-sufficient environments, making it easy to deploy on many computing environments. Additionally, using Docker allows my code to be built once and then deployed on multiple robots, preventing the need to rebuild the system on every robot which saves a significant amount of time. These aspects of Docker are expanded upon in the section below.
+
+\subsection{Continuous Integration / Continuous Deployment}
+\label{sec:cicd}
+My GitHub repositories are set up to perform continuous integration via GitHub Action. Every time code is pushed to the repository, all 5 core packages (\texttt{controller}, \texttt{interfaces}, \texttt{motion\_controller}, \texttt{orb\_slam3\_ros}, \texttt{webots\_sim}) are built to ensure there are no compile time errors.
+
+Additionally, a Docker container is cross-compiled to \texttt{arm64} and uploaded to Docker Hub. These Docker images can then be downloaded to the Cambridge RoboMasters (the platform used for real-world testing) and immediately run. This greatly speeds up development, as compiling the codebase locally on the Cambridge RoboMasters takes over 20 minutes for each robot.
+
+Aside from the core packages, we also perform continuous integration as well as continuous deployment for the Raspberry Pi video publisher package. A Docker container is similarly cross-compiled to \texttt{arm64} and uploaded to Docker Hub, and it is automatically deployed to the Raspberry Pis so they will run the latest version of the package.
+
+Continuous deployment makes sense for this use case as the Raspberry Pis are designed to be plug-and-play, starting video streaming as soon as they are turned on. Unlike the Cambridge RoboMasters which are frequently ssh'ed into to pull specific Docker images and start experiments, we want the Raspberry Pis to use the latest software as soon as it is pushed to the GitHub repository.
+
+The ease of use of the Raspberry Pi ROS video publisher platform that I have developed has made them an invaluable tool in the Prorok Lab, even being used by other researchers. TODO: get other people to use them lol
+
+TODO: add diagram
 
 \section{Datasets}
 \label{sec:datasets}
