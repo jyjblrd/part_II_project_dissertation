@@ -173,7 +173,7 @@ The external key frame inserter is run whenever we have spare cycles on the CPU,
         \caption{\textbf{Step 6}: Local bundle adjustment around $k_{ext}$ to refine the map using the new information. Original key frame and map point locations shown in purple.}
     \end{subfigure}%
 
-    \caption{test}
+    \caption{Visual overview of inserting external key frames and map points into the local map. External key frame (a) and initial local map (b) are combined to create our final local map (e).}
 
 \end{figure}
 
@@ -318,9 +318,32 @@ To calculate $s_s$, we first find the positive minima $x_{min}$ of $J_x + J_s$ i
     x_{min} = \ln \left( \frac{\sqrt{Q_s^2-4Q_s}+Q_s}{2}-1 \right)
 \end{equation}
 
-The key benefit of these cost functions is that the optimal distance to obstacles of $r$ is invariant to parameters $Q_s$, $Q_d$, and $r$. This is in contrast to \autocite{DBLP:journals/corr/KamelASN17} which required you to retune the parameters $\kappa$ and $Q$ upon changing agent radius $r$, greatly slowing down development.
+The key benefit of these cost functions is that the optimal distance to obstacles of $r$ is invariant to parameters $Q_s$ and $Q_d$. This is in contrast to \autocite{DBLP:journals/corr/KamelASN17} which requires you to retune the parameters $\kappa$ and $Q$ upon changing agent radius $r$. This is because their cost functions do not have their minima at the collision point, but instead at some point before the collision that varies with $\kappa$, $Q$, and $r$, making tuning very difficult. This is visualized in \autoref{fig:nmpc_cost_function}
 
-TODO: add graph for cost functions, maybe a 2d surface showing the cost function
+\begin{figure}[h]
+    \centering
+
+    \begin{subfigure}[t]{0.33\textwidth}
+        \centering
+        \caption{My Cost Function}
+        \includegraphics[height=1.7in]{figures/nmpc_cost_function_0.pdf}
+    \end{subfigure}%
+    ~
+    \begin{subfigure}[t]{0.33\textwidth}
+        \centering
+        \caption{Kamel et al.'s Cost Function}
+        \includegraphics[height=1.7in]{figures/nmpc_cost_function_1.pdf}
+    \end{subfigure}%
+    ~
+    \begin{subfigure}[t]{0.33\textwidth}
+        \centering
+        \caption{Kamel et al.'s Cost Function}
+        \includegraphics[height=1.7in]{figures/nmpc_cost_function_2.pdf}
+    \end{subfigure}%
+
+    \caption{Comparison of my cost function (a) and Kamel et al.'s cost function (b), (c) when the obstacle and goal pose are at the same location. This demonstrates that my cost function's minima is always at the collision point and does not vary as the parameters are changed, as opposed to Kamel et al.'s function.}
+    \label{fig:nmpc_cost_function}
+\end{figure}
 
 \subsubsection{Implementation Details}
 \label{sec:nmpc-implementation-details}
@@ -368,6 +391,15 @@ The \hyperref[sec:webots-simulator]{Webots Simulation Software} Section in the P
 Webots is an open source 3D robotics simulator with realistic rendering, which is essential for testing a visual SLAM system. Webots can not be built for the ARM Ubuntu VM I used for development, therefore it had to be run on MacOS and the data was streamed to the Ubuntu VM through a websocket bridge developed by Webots.
 
 I then developed a ROS node which exposes the Webots cameras and agent controls as ROS topics, following the abstract robot interface specifications. This allowed my SLAM system to process the camera streams and the motion controller / central management interface to control the agent's movements.
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.2]{figures/simulation_environment.pdf}
+
+    \caption{Simulation system architecture. The Webots application runs on MacOS and is exposed to the Ubuntu VM as ROS topics by the custom \texttt{Webots Client} ROS node.}
+    \label{fig:simulation-environment}
+\end{figure}
 
 \section{Real World Implementation}
 \label{sec:real-world-implementation}
