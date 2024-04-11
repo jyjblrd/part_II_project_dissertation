@@ -8,24 +8,93 @@
 \label{sec:review-of-success-criteria}
 My project has met all success criteria as outlined below:
 
-\textbf{Multiple agents will be able to localize themselves within a world using purely visual data.}
+\begin{enumerate}[font=\bfseries]
+  \item[1a.]\textbf{Multiple agents will be able to localize themselves within a world using purely visual data.} \\
+  My system is the first decentralized SLAM system capable of operating using only monocular camera data. This removes the need for large and expensive stereo camera, LiDAR or RGBD sensors.
 
-\textbf{Agents will be capable of communicating with each other to build a shared understanding of the world.}
+  \item[1b.]\textbf{Agents will be capable of communicating with each other to build a shared understanding of the world.} \\
+  Agents use ROS to perform decentralized and reliable communication with eachother, and are able to merge maps and share key frames to build a shared world.
 
-\textbf{Agents will be able to act independently, failing gracefully if it loses communication with its peers.}
+  \item[1c.]\textbf{Agents will be able to act independently, failing gracefully if it loses communication with its peers.} \\
+  Agents fall back to performing single-agent visual SLAM when communication with their peers is degraded or lost. Once communication is regained, the agents share their unsent map data.
+
+  \item[2.]\textbf{Evaluate the capabilities of the system compared to a comparable single-agent system.} \\
+  This is done in the \nameref{sec:benchmarking} Section. I go beyond the original success criteria by also comparing my system to comparable multi-agent systems, demonstrating my system's superior performance.
+
+\end{enumerate}
 
 
-After discussions with my supervisor, we decided to not prusue my original project extensions, instead focusing on deploying the SLAM system on physical robots and building
+After discussions with my supervisor, we decided to not pursue my original project extensions, instead focusing on deploying the SLAM system on physical robots and building... TODO
 
 \section{Benchmarking}
 \label{sec:benchmarking}
+This section will benchmark the performance of my system when run on industry standard visual SLAM datasets. All evaluations are run using only monocular camera data.
+
+The Central Management Interface is used to stream the dataset to the agents and my library \textit{Multi Agent EVO} is used to provide the Absolute Trajectory Error (ATE).
+
+\subsection{EuRoC Machine Hall}
+\label{sec:euroc-machine-hall}
+The EuRoC Machine Hall dataset \autocite{burri2016euroc} is one of the most widely used visual SLAM datasets, providing a 752x480 20fps video feed and millimeter level ground truth data at 20hz. To simulate a multi-agent dataset, we run the Machine Hall 01-03 scenarios in parallel on three agents.
+
+All three agents merge initialize maps of vastly different scales but are able to merge within XXX seconds and begin sharing map data.
+
+\autoref{fig:euroc-mh-01-03-line-plot} shows the ATE of my system when running this dataset. The overall RMS ATE is only 6.2cm over the 279m total trajectory length, demonstrating my system's very impressive accuracy. It is clear that my system is performing SLAM as opposed to simple visual odometry as the ATE returns back to the baseline at the end of each run when the agents return back to their starting position.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/EuRoC_MH_01-03_line_plot.pdf}
+
+  \caption{Plot of my system's average trajectory error (ATE) with respect to the ground truth when running the EuRoC Machine Hall 01-03 scenarios in parallel on three agents. The average RMSE of the multi-agent system is 0.062m over the 279m total trajectory length. \captionbreak RMSE represents the root mean square of the ATE.}
+  \label{fig:euroc-mh-01-03-line-plot}
+\end{figure}
+
+TODO do a plot of like 5 runs to show low variance.
+
+We now run the Machine Hall 01 and 02 scenarios on two agents to analyze the network usage in \autoref{fig:euroc-mh-01-02-bandwith}. Initially, the agents send bag of word information before quickly detecing a merge opportunity. Agent 1 then procedes to send its full map to agent 2, which can be seen as a large initial spike in network bandwith. The agents successfully merge, and begin exchanging key frames. The rate of key frame data being sent rises and falls depending on how much new area the agent is exploring.
+
+Along with sending key frames, the agents sporadically send map points to refine their map alignment. This occurs less frequently the longer system runs due to the additive increase multiplicative decrease method used to schedule map alignments, described in the \nameref{sec:map-alignment-refiner} Section. However, the size of the messages also grows over time due to the larger number of tracked map points.
+
+The total data exchanged by the two agent system is 55.7MB over 184 seconds, giving an average communication rate of 302.6KB/s. 84\% of this is from key frame data, which is sent at an average of 127KB/s by each agent.
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[t]{0.55\textwidth}
+    \centering
+    \includegraphics[width=\linewidth, valign=b]{figures/euroc_mh_01-02_bandwith.pdf}
+  \end{subfigure}%
+  ~
+  \begin{subfigure}[t]{0.4\textwidth}
+    \flushright
+    \adjustbox{valign=b, totalheight=2.15in}{
+      \marginbox{0 0.35in 0 0} {
+        \input{figures/euroc_mh_01-02_bandwith_table.tex}
+      }
+    }
+  \end{subfigure}%
+
+  \caption{Bandwidth used by a two agent system running the EuRoC Machine Hall 01 and 02 scenarios, from the perspective of the first agent. The total running time is 184 seconds.}
+  \label{fig:euroc-mh-01-02-bandwith}
+\end{figure}
+
+\subsection{TUM-VI Rooms}
+\label{sec:tum-rooms}
+The TUM visual-intertial dataset
 
 \section{Comparison to Related Work}
 \label{sec:comparison-to-related-work}
+
+% compare to ccm slam, and also vins mono with multisession running which is shit lol.
 
 % Qualitative and quantitative
 
 
 \section{Real World Experiments}
 \label{sec:real-world-experiments}
+Deploying my system on physical robots demonstrates its ability to be run in real time within the computational, bandwith and latency constraints of real world systems. Furthermore, it demonstrates the robustness of my development framework which allowed seamless migration from local testing using simulations to a real distributed system using live camera feeds with no changes to my code base.
+
+The details of the real world setup are given in the \nameref{sec:real-world-implementation} Section. In summary, the Cambridge RoboMasters platform was used
+
+\subsection{Multi-Agent Collision Avoidance}
+\label{sec:multi-agent-collision-avoidance}
+In this experiment, we showcase the NMPC collision avoidence motion controller working in conjunction with the SLAM system to avoid collisions with both static and dynamic obstacles. The SLAM system enables the agents to localize each other even when their cameras
 

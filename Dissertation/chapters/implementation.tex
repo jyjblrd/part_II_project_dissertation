@@ -216,17 +216,17 @@ This is perhaps best represented in visual form by the simple 3 agent merge exam
     \centering
     \includegraphics[]{figures/3_agent_merge.pdf}
 
-    \caption{This is a simple 3 agent merge example where $agent_1$ and $agent_2$ merge first, and then $agent_0$ and $agent_1$. Agents in the same group are shown in the same rectabgle, and the group leader is bolded. \\[0.4em]Initially at $t_0$, all agents are unmerged and therefore share the bag of words representations of new keyframes with the other agents. A potential merge with $agent_1$ is then detected by $agent_2$. Since $2>1$, $agent_2$ needs to perform the merge so it request $agent_1$'s full map. It successfully merges with $agent_1$'s full map and broadcasts this information to all other agents. \\[0.4em]At $t_1$, $agent_1$ and $agent_2$ are merged therefore they begin exchanging key frames. $agent_0$ and $agent_1$ are the two remaining group leaders, so they continue to exchange they new key frame's bag of words. $agent_0$ detects a potential merge, and since $0<1$ it sends its full map to $agent_1$. $agent_1$ is able to successfully merge with $agent_0$'s full map, so it broadcasts that $agent_0$ and $agent_1$. Additionally, it sends the transform $T_{1 \to 0}$ ($agent_1$ to $agent_0$'s coordinate frame) to $agent_2$ allowing it to change to $agent_0$'s coordinate frame. $agent_1$ then broadcasts that $agent_0$ and $agent_2$ have implicitly merged. \\[0.4em]At $t_2$, all three agents are merged and in $agent_0$'s coordinate frame, and therefore they all exchange key frames with one another.}
+    \caption{This is a simple 3 agent merge example where $agent_1$ and $agent_2$ merge first, and then $agent_0$ and $agent_1$. Agents in the same group are shown in the same rectabgle, and the group leader is bolded. \captionbreak Initially at $t_0$, all agents are unmerged and therefore share the bag of words representations of new keyframes with the other agents. A potential merge with $agent_1$ is then detected by $agent_2$. Since $2>1$, $agent_2$ needs to perform the merge so it request $agent_1$'s full map. It successfully merges with $agent_1$'s full map and broadcasts this information to all other agents. \captionbreak At $t_1$, $agent_1$ and $agent_2$ are merged therefore they begin exchanging key frames. $agent_0$ and $agent_1$ are the two remaining group leaders, so they continue to exchange they new key frame's bag of words. $agent_0$ detects a potential merge, and since $0<1$ it sends its full map to $agent_1$. $agent_1$ is able to successfully merge with $agent_0$'s full map, so it broadcasts that $agent_0$ and $agent_1$. Additionally, it sends the transform $T_{1 \to 0}$ ($agent_1$ to $agent_0$'s coordinate frame) to $agent_2$ allowing it to change to $agent_0$'s coordinate frame. $agent_1$ then broadcasts that $agent_0$ and $agent_2$ have implicitly merged. \captionbreak At $t_2$, all three agents are merged and in $agent_0$'s coordinate frame, and therefore they all exchange key frames with one another.}
     \label{fig:3-agent-merge}
 \end{figure}
 
 \subsubsection{Map Alignment Refiner}
 \label{sec:map-alignment-refiner}
-As our shared map grows, the maps stored locally by the agents may "fall out of alignment". By this, we mean that the maps are slightly translated, rotated, or scaled with respect to the lead agent's map TODO: define. This is largely a side effect of our aggressive early merge strategy which may merge two agents' maps before there is significant overlap, causing the estimated map alignment (ie. transformation between the two agents' origins) to have some error.
+As our shared map grows, the maps stored locally by the agents may "fall out of alignment". By this, we mean that the maps are slightly translated, rotated, or scaled with respect to the lead agent's map. This is largely a side effect of our aggressive early merge strategy which may merge two agents' maps before there is significant overlap, causing the estimated map alignment (ie. transformation between the two agents' origins) to have some error.
 
 These small alignment errors are completely acceptable when maps are small, but may cause the maps to diverge as they grow.
 
-To remedy this problem, we continuously refine our map alignment using \nameref{sec:ransac} and the Kabsch-Umeyama point alignment algorithm. After enough changes have been made to our local map, we perform the following steps:
+To remedy this problem, we continuously refine our map alignment using \nameref{sec:ransac} and the Kabsch-Umeyama point alignment algorithm. Map alignment is performed as follows:
 
 \begin{enumerate}
     \item \textbf{Request map point locations from the lead agent}. \\
@@ -239,6 +239,8 @@ To remedy this problem, we continuously refine our map alignment using \nameref{
           The RANSAC and Kabsch-Umeyama algorithms are described in detail in \autoref{sec:ransac} and \autoref{sec:kabsch-umeyama-algorithm} respectively.
     \item \textbf{Apply transformation $T$ to our local map.}
 \end{enumerate}
+
+We use an \textit{additive increase multiplicative decrease} methodology to control how often map alignment is performed. Given $t_i$ is the time between the $i$-th and $(i+1)$-th map alignments, we set $t_{i+1} = t_i + 1$ if the maps were well aligned, and $t_{i+1} = t_i / 2$ if the maps were not well aligned. This prevents agents from continuously performing map alignments when their maps are already well aligned.
 
 \subsubsection{Reference Frame Manager}
 \label{sec:reference-frame-manager}
