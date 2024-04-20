@@ -39,13 +39,13 @@ Centralized multi-agent systems such as CCM-SLAM(2019) \autocite{schmuck2019ccm}
 
 In recent years we have seen the emergence of a handful of decentralized multi-agent systems, however they have various limitations. Various systems such as \autocite{doi:10.1126/scirobotics.abm5954} \autocite{8658783} \autocite{DBLP:journals/corr/abs-2103-12770} require the agents to be initialized with their ground truth poses, which limits their real-world usability. In contrast, my system is able to provide accurate relative localization even when agents are initialized in arbitrary and unknown locations by identifying common landmarks in the world.
 
-Table XXX lays out the sensor configurations used by other various state-of-the-art distributed SLAM systems, showing that my system stands out as the only one capable of operating with purely monocular visual data. This is advantageous, as LiDAR \& RGBD sensors have considerable weight, and stereo cameras may require a minimum camera separation to operate, both of which limit their usage on small aerial robots.
+Table TODO lays out the sensor configurations used by other various state-of-the-art distributed SLAM systems, showing that my system stands out as the only one capable of operating with purely monocular visual data. This is advantageous, as LiDAR \& RGBD sensors have considerable weight, and stereo cameras may require a minimum camera separation to operate, both of which limit their usage on small aerial robots.
 
 
 TODO: fact check below lol
 Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem. There are various methods to approaching DPGO. SWARM-SLAM(2024) \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents by using algorithms such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however these methods still present a communication overhead and may stall under unreliable communication.
 
-Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with an additional map alignment step performed on a timer. This method has no additional communication overhead, apart from the infrequent map alignment step, and we analyze its performance in the XXXX section(?). The details of this are presented in the \nameref{sec:decentralized-system-manager} Section.
+Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with an additional map alignment step performed on a timer. This method has no additional communication overhead, apart from the infrequent map alignment step, and we analyze its performance in the \nameref{sec:benchmarking} Section. The details of this are presented in the \nameref{sec:decentralized-system-manager} Section.
 
 
 % DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} uses the Distributed Gauss-Seidel approach to Distributed Pose Graph Optimization (DPGO) proposed by Choudhary et al. in 2017 \autocite{DBLP:journals/corr/ChoudharyCNRCD17} while Kimera-Multi(2022) \autocite{tian22tro_kimeramulti} utilizes distributed graduated non-convexity for DPGO. However,
@@ -161,9 +161,13 @@ TODO: add diagram
 
 \section{Datasets}
 \label{sec:datasets}
+A variety of industry-standard datasets were utilized to benchmark the performance of my SLAM system, including the EuRoC Machine Hall \autocite{burri2016euroc} and TUM-VI \autocite{8593419} datasets. While these datasets provide a variety of sensors, we only utilize a monocular video as input when evaluating performance. Further information about each dataset is provided in the \nameref{sec:benchmarking} Section.
+
+In addition to standard datasets, I also generated custom datasets within the simulated environment to use as regression tests during development. These datasets test individual capabilities of the system such as multi-agent map merging, losing localization, etc. I then ran these tests on my system to ensure that the system performed as expected and that metrics such as time-to-merge and average trajectory error were decreasing as I iterated on my system.
 
 \section{Algorithms}
 \label{sec:algorithms}
+This section will briefly cover some of the existing algorithms utilized within my SLAM system, and can be used as a reference when reading the \nameref{sec:3} Section.
 
 \subsection{Kabsch-Umeyama Algorithm}
 \label{sec:kabsch-umeyama-algorithm}

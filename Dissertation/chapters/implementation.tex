@@ -373,6 +373,24 @@ This project aims to create more than just a research project which only runs on
 
 TODO: ACTUALLY EXPLAIN WHAT THIS INTERFACE DOES
 
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[c]{0.4\textwidth}
+        \centering
+        \includegraphics[trim=5cm 5cm 5cm 5cm, width=\linewidth]{figures/central_management_interface_diagram.pdf}
+        \caption{Central Management Interface architectural diagram}
+    \end{subfigure}\hfill%
+    ~
+    \begin{subfigure}[c]{0.55\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/central_management_interface.png}
+        \caption{Central Management Interface}
+    \end{subfigure}%
+
+    \caption{Central management interface, used for controlling agents in a simulation, recording datasets, playing back datasets, and recording trajectories for later analysis.}
+    \label{fig:central-management-interface}
+\end{figure}
+
 \section{Custom Evaluation Suite – Multi-Agent EVO}
 \label{sec:multi-agent-evo}
 While there are several mature single-agent SLAM evaluation tools, I found there to be a complete lack of evaluation tools for multi-agent SLAM systems. (TODO: say that no multi agent slam paper released code used for evaluation) Therefore, I have developed an open-source multi-agent SLAM evaluation tool: \textit{Multi Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
@@ -443,10 +461,7 @@ To overlay our SLAM system's data on the video, we must first align the SLAM sys
 
 To my knowledge, this system is the first of its kind to be used in such a project. Not only does it look visually impressive, but it also can be used for further analysis and understanding. For example, the camera can be used to understand which features the SLAM system is tracking and how well their predicted location aligns with reality. Additionally, it can be used analyse the SLAM system's predicted trajectory – this visualization helped me identify that a large source of error was being caused by latency spikes which I proceded to fix.
 
+TODO: put visualization here
+
 \section{Repository Overview}
 \label{sec:repository-overview}
-
-
-
-
-
