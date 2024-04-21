@@ -36,25 +36,33 @@ The Central Management Interface is used to stream the dataset to the agents and
 \label{sec:euroc-machine-hall}
 The EuRoC Machine Hall dataset \autocite{burri2016euroc} is one of the most widely used visual SLAM datasets, providing a 752x480 20fps video feed and millimeter level ground truth data at 20hz. The camera rig is attached to a Micro Aerial Vehicle (MAV) which flies through a large machine room. To simulate a multi-agent dataset, we run the Machine Hall 01-03 scenarios in parallel on three agents.
 
-All three agents merge initialize maps of vastly different scales but are able to merge within TODO seconds and begin sharing map data.
+% All three agents merge initialize maps of vastly different scales but are able to merge within TODO seconds and begin sharing map data.
 
-\autoref{fig:euroc-mh-01-03-line-plot} shows the ATE of my system when running this dataset. The overall RMS ATE is only 6.2cm over the 279m total trajectory length, demonstrating my system's very impressive accuracy. It is clear that my system is performing SLAM as opposed to simple visual odometry as the ATE returns back to the baseline at the end of each run when the agents return back to their starting position.
+\autoref{fig:euroc-mh-01-03-5-trials} presents the RMS absolute trajectory error and total system data transfer of my distributed system running this dataset. The median RMS ATE is 5.9cm over the 279 meter total trajectory length, demonstrating my system's very impressive accuracy. There ATEs and data transfer rates have a 1.4cm and 0.11 MB/s spread around the median respectively across 5 trials, demonstrating the repeatability and robustness of my system.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/comparison_apr11_mh_trajectory_b.pdf}
+
+    \caption{Plot the RMS ATE and Total Data Transfer rate of running the EuRoC Machine Hall 01-03 dataset 5 times on my system.}
+    \label{fig:euroc-mh-01-03-5-trials}
+\end{figure}
+
+To further analyze the characteristics of my SLAM system, we focus on an individual trial. \autoref{fig:euroc-mh-01-03-line-plot} plots the ATE as the trial progresses. It is clear that my system is performing SLAM as opposed to simple visual odometry as the ATE returns back to the baseline at the end of the trial when the agents return back to their starting position.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/EuRoC_MH_01-03_line_plot.pdf}
 
-    \caption{Plot of my system's average trajectory error (ATE) with respect to the ground truth when running the EuRoC Machine Hall 01-03 scenarios in parallel on three agents. The average RMSE of the multi-agent system is 0.062m over the 279m total trajectory length. \captionbreak RMSE represents the root mean square of the ATE.}
+    \caption{Plot of my system's absolute trajectory error (ATE) with respect to the ground truth when running the EuRoC Machine Hall 01-03 scenarios in parallel on three agents.\captionbreak RMSE represents the root mean square of the ATE.}
     \label{fig:euroc-mh-01-03-line-plot}
 \end{figure}
 
-TODO do a plot of like 5 runs to show low variance.
-
-We now run the Machine Hall 01 and 02 scenarios on two agents to analyze the network usage in \autoref{fig:euroc-mh-01-02-bandwith}. Initially, the agents send bag of word information before quickly detecing a merge opportunity. Agent 1 then procedes to send its full map to agent 2, which can be seen as a large initial spike in network bandwith. The agents successfully merge, and begin exchanging key frames. The rate of key frame data being sent rises and falls depending on how much new area the agent is exploring.
+We now analyze the network usage presented in \autoref{fig:euroc-mh-01-02-bandwith}. Initially, the agents send bag of word information before quickly detecing a merge opportunity. Agent 1 procedes to send its full map to agent 2, which can be seen in the large initial spike in network bandwith. The agents successfully merge, and begin exchanging key frames. The rate of key frame data being sent rises and falls depending on how much new area the agent is exploring.
 
 Along with sending key frames, the agents sporadically send map points to refine their map alignment. This occurs less frequently the longer system runs due to the additive increase multiplicative decrease method used to schedule map alignments, described in the \nameref{sec:map-alignment-refiner} Section. However, the size of the messages also grows over time due to the larger number of tracked map points.
 
-The total data exchanged by the two agent system is 55.7MB over 184 seconds, giving an average communication rate of 302.6KB/s. 84\% of this is from key frame data, which is sent at an average of 127KB/s by each agent.
+The data exchanged between agents largely consists of new key frames, and further work should be dedicated to optimizing the serialized representation of key frames.
 
 \begin{figure}[h]
     \centering
@@ -127,14 +135,27 @@ The total data exchanged by the two agent system is 55.7MB over 184 seconds, giv
 \label{sec:tum-rooms}
 The TUM visual-intertial dataset \autocite{8593419} consists of handheld fisheye 512x512 video with ground truth data. As before, we use only monocular visual data and combine the room1-3 sessions to simulate a multi-agent dataset. The "room" environment is used for this evaluation, which is a motion capture lab with plain flat walls with some posters hung up. There is less texture in this environment than the machine hall, making visual-only SLAM more difficult. Additionally, parts of the room are revisited dozens of times by different agents, allowing us to evaluate our system's ability to relocalize agents within previously mapped environments.
 
+\autoref{fig:tum-room-01-03-5-trials} shows that the RMS ATE is very tightly clustered around the median of 6.95cm, with one outlier caused by an agent in that trial having a slightly unoptimal map merge. The tight clustering is most likely due to the small environment with areas being revisited many times, allowing the shared map to converge on a very similar solution each time. The lower median data transfer rate of 0.84 MB/s is also due to the small environment, resulting in the agents having to share less information.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/comparison_apr11_tum_room_trajectory_a.pdf}
+
+    \caption{Plot the RMS ATE and Total Data Transfer rate of running the EuRoC Machine Hall 01-03 dataset 5 times on my system.}
+    \label{fig:tum-room-01-03-5-trials}
+\end{figure}
+
+Once again, we focus on an individual trial to further evaluate my system. \autoref{fig:tum-room-01-03-line-plot} shows that there is no long term error build up, demonstrating that my system is successfully localizing agents within the shared map and performing long-term map point association.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{figures/apr11_tum_room_trajectory_a_line_plot.pdf}
 
     \caption{Plot of my system's average trajectory error (ATE) with respect to the ground truth when running the EuRoC Machine Hall 01-03 scenarios in parallel on three agents. The average RMSE of the multi-agent system is 0.062m over the 279m total trajectory length. \captionbreak RMSE represents the root mean square of the ATE.}
-    \label{fig:euroc-mh-01-03-line-plot}
+    \label{fig:tum-room-01-03-line-plot}
 \end{figure}
+
+\autoref{fig:tum-rooms-01-03-bandwith} presents the data transfer breakdown of a single trial, and yields similar conclusions to that of the EuRoC Machine Hall dataset. The only difference to note is the smaller key frame and alignemnt data transfer rate due to the smaller environment.
 
 \begin{figure}[h]
     \centering
@@ -200,7 +221,7 @@ The TUM visual-intertial dataset \autocite{8593419} consists of handheld fisheye
     \end{subfigure}%
 
     \caption{Bandwidth used by the TUM-VI Rooms 01-03 scenarios running on my SLAM system.}
-    \label{fig:euroc-mh-01-02-bandwith}
+    \label{fig:tum-rooms-01-03-bandwith}
 \end{figure}
 
 %evaluate how
@@ -208,41 +229,71 @@ The TUM visual-intertial dataset \autocite{8593419} consists of handheld fisheye
 \section{Comparison to Related Work}
 \label{sec:comparison-to-related-work}
 
-Direct comparisons with other multi-agent SLAM systems is difficult since many of them rely on stero cameras, IMUs, and LiDAR sensors. However, this section attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
+A direct comparisons with other multi-agent SLAM systems is difficult, since many of them rely on stero cameras, IMUs, LiDAR and other sensors. However, this section still attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
 
 \subsection{CCM-SLAM}
 \label{sec:ccm-slam}
-Centralized Collaborative Moncular SLAM (CCM-SLAM) (2019) from the ETH Zurich Vision for Robotics Lab \autocite{schmuck2019ccm} is the most comparable multi-agent SLAM system in recent literature, and is well cited in the field. Their approach also uses purely monocular vision with ORB-SLAM to the front-end tracking and local mapping stages of the SLAM pipeline, with a custom backend to integrate data from multiple agents into the shared map.
+Centralized Collaborative Moncular SLAM (CCM-SLAM) (2019) from the ETH Zurich Vision for Robotics Lab \autocite{schmuck2019ccm} is the most comparable multi-agent SLAM system in recent literature, and is well cited in the field. Their approach also uses purely monocular vision with ORB-SLAM to the front-end tracking and local mapping stages of the SLAM pipeline, with a custom backend to integrate data from multiple agents into the shared map. To my knowledge, it is the most recent monocular vision capable multi-agent SLAM system.
 
-The results of CCM-SLAM and my system running the EuRoC Machine Hall 01-03 dataset are presented in \autoref{fig:comparison-to-multi-agent-systems}. \textbf{It is important to note that CCM-SLAM is a centralized system, significantly simplifying their multi-agent SLAM problem compared to my distributed system.} Nevertheless, my system is able to outperform CCM-SLAM by TODO\% in terms of RMS ATE, demonstrating its compeditiveness. In addition, my system's total data transfered comparable to CCM-SLAM, being only TODO\% higher.
+The results of CCM-SLAM and my system running the EuRoC Machine Hall 01-03 dataset are presented in \autoref{fig:comparison-to-multi-agent-systems}. \textbf{It is important to note that CCM-SLAM is a centralized system, significantly simplifying their multi-agent SLAM problem compared to my distributed system.} Nevertheless, my system is able to outperform CCM-SLAM in terms of RMS ATE, demonstrating its compeditiveness. My system's total data transfered is 32\% higher than CCM-SLAM, however this could easily be reduced as I have made no attempt to optimize the data transfer efficiency of my system.
 
 \subsection{VINS-Mono Multisession SLAM}
-VINS-Mono (2018) \autocite{8421746} is a popular open source single agent monocular vision SLAM system. While it is a single agent system, it additionally has multisession capabilities. This allows multiple datasets to be played consecutively, with each session building upon the map built by the previous sessions (eg. session 2 is initialized in the map generated after running session 1). This is an easier problem than multi-agent SLAM, where the sessions are run in parallel and the agents have to share their maps in real time.As presented in \autoref{fig:comparison-to-multi-agent-systems}, my system still outperforms VINS-Mono multisession by TODO\%.
+VINS-Mono (2018) \autocite{8421746} is a popular open source single agent monocular vision SLAM system. While it is a single agent system, it additionally has multisession capabilities. This allows multiple datasets to be played consecutively, with each session building upon the map built by the previous sessions (eg. session 2 is initialized in the map generated after running session 1). This is an easier problem than multi-agent SLAM, where the sessions are run in parallel and the agents have to share their maps in real time.As presented in \autoref{fig:comparison-to-multi-agent-systems}, my system still outperforms VINS-Mono multisession.
 
 \begin{figure}[h]
     \centering
+    \def\arraystretch{1.2}
+    \begin{tabular}{ |l|l|l|l| }
+        \cline{2-4}
+        \multicolumn{1}{c|}{} & My system      & CCM-SLAM$^1$ & VINS-Mono$^2$ \\
+        \hline
+        RMS ATE [m]$^3$       & \textbf{0.059} & 0.077        & 0.074         \\
+        \hline
+        % Data Transfer [MB/s]  & 1.31               & \textbf{0.99}     & N/A                \\
+        % \hline
+    \end{tabular}
 
-    \caption{Comparison of my SLAM system to comparable state of the art multi-agent systems.}
+    \caption{Comparison of my SLAM system to comparable state of the art multi-agent systems running the EuRoC Machine Hall 01-03 dataset. \captionbreak $^1$CCM-SLAM is a centralized system, as opposed to my decentralized system. \\ $^2$VINS-Mono is a single-agent SLAM system run in multisession mode. \\ $^3$RMS ATE is taken as the median of 5 trials. Results of external systems are taken from \autocite{schmuck2019ccm}.}
     \label{fig:comparison-to-multi-agent-systems}
 \end{figure}
 
 \subsection{Comparison to Single-Agent SLAM Systems}
-Along with providing relative positioning, we would expect a multi-agent SLAM system to have higher accuracy than a comparable single-agent system. \autoref{fig:comparison-to-single-agent-systems} presents my multi-agent system's errors compared to ORB-SLAM3 and VINS-Mono running the datasets individually. ORB-SLAM3 is widely regarded as the most accurate single-agent SLAM system currently avaiable and was used to perform the tracking and local mapping in my multi-agent system, so there is no suprise that it performs very well. However, my system still outperforms the others, demonstrating the clear benifits of collaborative SLAM.
-
-An observation is that some agents yield a greater improvment in error from the multi-agent system than others, which I hypothesize is the result of the varying ability amoung agents to utilize the shared map. For example, $agent_2$ has a similar RMS ATE in both the single-agent and multi-agent systems. This is due to it exploring an entirely different area to $agnet_0$ and $agent_1$, preventing it from benifiting from the data collected by the other agents.
-
-\autoref{} visualizes the collaborative shared map built by my system compared to the individual maps from the single-agent ORB-SLAM3. There is clear deep integration between the different agents' map data in my collaborative map, giving the agents more numerous and accurate features to use when localizing themselves, resulting in lower trajectory errors.
+Along with providing relative positioning, we would hypothesise a multi-agent SLAM system to have higher accuracy than a comparable single-agent system. However, the reality is more complex than this simple assumption. \autoref{fig:comparison-to-single-agent-systems} presents my multi-agent system's errors compared to ORB-SLAM3 running the datasets individually. ORB-SLAM3 is used to perform the tracking and local mapping in my multi-agent system, and is widely regarded as the most accurate single-agent SLAM system currently avaiable so there is no suprise that it performs very well.
 
 \begin{figure}[h]
     \centering
+    \def\arraystretch{1.2}
+    \begin{tabular}{ |l|l|l| }
+        \cline{2-3}
+        \multicolumn{1}{c|}{} & My system$^1$  & ORB-SLAM3$^2$  \\
+        \hline
+        EuRoC MH 01           & 0.051          & \textbf{0.049} \\
+        EuRoC MH 02           & \textbf{0.048} & 0.099          \\
+        EuRoC MH 03           & \textbf{0.058} & 0.062          \\
+        \hline
+        TUM-VI Room 1         & 0.072          & \textbf{0.071} \\
+        TUM-VI Room 2         & \textbf{0.048} & 0.050          \\
+        TUM-VI Room 3         & \textbf{0.041} & 0.042          \\
+        \hline
+        % Data Transfer [MB/s]  & 1.31               & \textbf{0.99}     & N/A                \\
+        % \hline
+    \end{tabular}
 
-    \caption{Comparison of my SLAM system to comparable state of the art single-agent systems.}
+    \caption{Comparison of individual agent errors from my multi-agent SLAM system and the single-agent ORB-SLAM system. All results are the median of 5 runs. \captionbreak $^1$Trajectories are aligned with the ground truth on a per-agent basis so we can compare each individual agent's performance in isolation. \\ $^2$Results are generated by running ORB-SLAM3 on my device with its default settings for the EuRoC dataset.}
     \label{fig:comparison-to-single-agent-systems}
 \end{figure}
 
+An observation is that some dataset sessions yield a greater improvment in error from the multi-agent system than others, which I hypothesize is the result of the varying ability amoung agents to utilize the shared map. For example, the TUM-VI Room dataset has very similar performance in both the single-agent and multi-agent systems since the environment is very small and areas of the map are revisited dozens of times in one session. This reduces the benefit of a multi-agent system's as a single-agent system already observes more than enough data to build an accurate map of the world, making the extra data provided by the additional agents in a multi-agent system redundant.
+
+EuRoC Machine Hall 03 and
+
+On a broader note, many researchers believe single-agent SLAM to be a solved problem. This is reflected by the results seen here, where single-agent systems are able to give incredibly low trajectory errors that even multi-agent systems with far more data struggle to improve upon. This is not something specific to my system – many other multi-agent systems do not have significantly higher accuracies than single-agent systems.
+
+Therefore, I believe that the primary benifits of a multi-agent system are its ability to provide relative positioning for path planning and collision avoidance capabilities, and to build a shared map of the environment which is useful in applications such as search and rescue or cave mapping.
+
+\autoref{} visualizes the collaborative shared map built by my system compared to the individual maps from the single-agent ORB-SLAM3. There is clear deep integration between the different agents' map data in my collaborative map, demonstrating that the agents are truely collaborating and welding their maps together. The multi-agent system is also able to build a full map of the environment, showing the advantage of collaborative SLAM systems.
+
 TODO: talk about why we only compare with euroc MH
-
-
 
 % compare data transfer with covins and ccm-slam which is shit
 
