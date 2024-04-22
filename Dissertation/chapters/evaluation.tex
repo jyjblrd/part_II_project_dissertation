@@ -24,7 +24,9 @@ My project has met all success criteria as outlined below:
 \end{enumerate}
 
 
-After discussions with my supervisor, we decided to not pursue my original project extensions, instead focusing on deploying the SLAM system on physical robots and building... TODO
+After discussions with my supervisor, we decided to not pursue my original project extensions of optimizing data transfer rates and adding additional sensors inputs to the system. We instead chose to focus on deploying the SLAM system on physical robots and building infrastructure around the system to improve usability and benifit the wider open source community.
+
+Deploying my system on real robots was a considerable amount of work, however I beleive it was important as it provides
 
 \section{Benchmarking}
 \label{sec:benchmarking}
@@ -229,13 +231,13 @@ Once again, we focus on an individual trial to further evaluate my system. \auto
 \section{Comparison to Related Work}
 \label{sec:comparison-to-related-work}
 
-A direct comparisons with other multi-agent SLAM systems is difficult, since many of them rely on stero cameras, IMUs, LiDAR and other sensors. However, this section still attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
+A direct comparisons with other multi-agent SLAM systems is difficult, since many rely on stero cameras, IMUs, LiDAR and other sensors. However, this section still attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
 
 \subsection{CCM-SLAM}
 \label{sec:ccm-slam}
 Centralized Collaborative Moncular SLAM (CCM-SLAM) (2019) from the ETH Zurich Vision for Robotics Lab \autocite{schmuck2019ccm} is the most comparable multi-agent SLAM system in recent literature, and is well cited in the field. Their approach also uses purely monocular vision with ORB-SLAM to the front-end tracking and local mapping stages of the SLAM pipeline, with a custom backend to integrate data from multiple agents into the shared map. To my knowledge, it is the most recent monocular vision capable multi-agent SLAM system.
 
-The results of CCM-SLAM and my system running the EuRoC Machine Hall 01-03 dataset are presented in \autoref{fig:comparison-to-multi-agent-systems}. \textbf{It is important to note that CCM-SLAM is a centralized system, significantly simplifying their multi-agent SLAM problem compared to my distributed system.} Nevertheless, my system is able to outperform CCM-SLAM in terms of RMS ATE, demonstrating its compeditiveness. My system's total data transfered is 32\% higher than CCM-SLAM, however this could easily be reduced as I have made no attempt to optimize the data transfer efficiency of my system.
+The results of CCM-SLAM and my system running the EuRoC Machine Hall 01-03 dataset are presented in \autoref{fig:comparison-to-multi-agent-systems}. \textit{It is important to note that CCM-SLAM is a centralized system, significantly simplifying their multi-agent SLAM problem compared to my distributed system.} Nevertheless, my system is able to outperform CCM-SLAM in terms of RMS ATE, demonstrating its compeditiveness. My system's total data transfered is 32\% higher than CCM-SLAM, however this could easily be reduced as I have made no attempt to optimize the data transfer efficiency of my system.
 
 \subsection{VINS-Mono Multisession SLAM}
 VINS-Mono (2018) \autocite{8421746} is a popular open source single agent monocular vision SLAM system. While it is a single agent system, it additionally has multisession capabilities. This allows multiple datasets to be played consecutively, with each session building upon the map built by the previous sessions (eg. session 2 is initialized in the map generated after running session 1). This is an easier problem than multi-agent SLAM, where the sessions are run in parallel and the agents have to share their maps in real time.As presented in \autoref{fig:comparison-to-multi-agent-systems}, my system still outperforms VINS-Mono multisession.
@@ -260,6 +262,10 @@ VINS-Mono (2018) \autocite{8421746} is a popular open source single agent monocu
 \subsection{Comparison to Single-Agent SLAM Systems}
 Along with providing relative positioning, we would hypothesise a multi-agent SLAM system to have higher accuracy than a comparable single-agent system. However, the reality is more complex than this simple assumption. \autoref{fig:comparison-to-single-agent-systems} presents my multi-agent system's errors compared to ORB-SLAM3 running the datasets individually. ORB-SLAM3 is used to perform the tracking and local mapping in my multi-agent system, and is widely regarded as the most accurate single-agent SLAM system currently avaiable so there is no suprise that it performs very well.
 
+An observation is that some dataset sessions have only a marginal improvment in error over the single-agent system, which I hypothesize is the result of the varying ability amoung agents to utilize the shared map. For example, the TUM-VI Room dataset has very similar performance in both the single-agent and multi-agent systems since the environment is very small and areas of the map are revisited dozens of times in one session. This reduces the benefit of a multi-agent system's as a single-agent system already observes more than enough data to build an accurate map of the world, making the extra data provided by the additional agents in a multi-agent system redundant.
+
+TODO talk about euroc dataset
+
 \begin{figure}[h]
     \centering
     \def\arraystretch{1.2}
@@ -283,10 +289,6 @@ Along with providing relative positioning, we would hypothesise a multi-agent SL
     \label{fig:comparison-to-single-agent-systems}
 \end{figure}
 
-An observation is that some dataset sessions yield a greater improvment in error from the multi-agent system than others, which I hypothesize is the result of the varying ability amoung agents to utilize the shared map. For example, the TUM-VI Room dataset has very similar performance in both the single-agent and multi-agent systems since the environment is very small and areas of the map are revisited dozens of times in one session. This reduces the benefit of a multi-agent system's as a single-agent system already observes more than enough data to build an accurate map of the world, making the extra data provided by the additional agents in a multi-agent system redundant.
-
-EuRoC Machine Hall 03 and
-
 On a broader note, many researchers believe single-agent SLAM to be a solved problem. This is reflected by the results seen here, where single-agent systems are able to give incredibly low trajectory errors that even multi-agent systems with far more data struggle to improve upon. This is not something specific to my system – many other multi-agent systems do not have significantly higher accuracies than single-agent systems.
 
 Therefore, I believe that the primary benifits of a multi-agent system are its ability to provide relative positioning for path planning and collision avoidance capabilities, and to build a shared map of the environment which is useful in applications such as search and rescue or cave mapping.
@@ -294,10 +296,6 @@ Therefore, I believe that the primary benifits of a multi-agent system are its a
 \autoref{} visualizes the collaborative shared map built by my system compared to the individual maps from the single-agent ORB-SLAM3. There is clear deep integration between the different agents' map data in my collaborative map, demonstrating that the agents are truely collaborating and welding their maps together. The multi-agent system is also able to build a full map of the environment, showing the advantage of collaborative SLAM systems.
 
 TODO: talk about why we only compare with euroc MH
-
-% compare data transfer with covins and ccm-slam which is shit
-
-% Qualitative and quantitative
 
 
 \section{Real World Experiments}

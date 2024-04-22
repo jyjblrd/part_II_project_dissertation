@@ -16,9 +16,9 @@ As noted in the \hyperref[sec:relevant-work]{\textit{Relevant Work}} section, vi
 
 I chose ORB-SLAM3 as the single agent SLAM system to base my system on top of, as it ranks at the top of benchmarks in a variety of environments \autocite{DBLP:journals/corr/abs-2108-01654} and its researchers released code alongside their paper. I primarily utilized the system's visual odometry (VO) front end and helper functions from the backend to perform operations such as bundle adjustment.
 
-While ORB-SLAM3 is an excellent SLAM system, it is fundamentally a single-agent system with no considerations in place for use in a multi-agent context. As I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was required to understand its extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system. In retrospect, using an existing single-agent SLAM system as a foundation may not have saved as much time as I had initially hoped.
+While ORB-SLAM3 is an excellent SLAM system, it is fundamentally a single-agent system with no considerations in place for use in a multi-agent context. As I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was required to understand its extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system. In retrospect, using an existing single-agent SLAM system as a foundation may not have saved as much time as I had initially hoped. I spent all of Michaelmas term wrangling with ORB-SLAM's codebase and was not able to begin making proper progress on the distributed aspect of my project until after Christmas break.
 
-Nevertheless, using a cutting-edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that is accurate and performant enough to have real-world use cases.
+Nevertheless, using a cutting-edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that performs better than comparable state-of-the-art systems, making it suitable for real-world applications.
 
 At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autocite{ORBSLAM3_TRO} git repository\footnotemark[1] and explored the codebase. ORB-SLAM3 is licensed under GPL-3.0, and as such, I have open-sourced my code under the same license\footnotemark[2].
 
@@ -90,11 +90,6 @@ Before developing a distributed multi-agent SLAM system, we must first understan
 \subsection{Loop Closure}
 \label{sec:visual-slam-loop-closure}
 
-
-\section{ORB-SLAM 3}
-\label{sec:orb-slam-3}
-ORB-SLAM 3 is a cutting-edge single-agent SLAM system, often ranking at the top of visual SLAM comparison papers. As noted in \hyperref[sec:starting-point]{\textit{Starting Point}} section, I used ORB-SLAM as my starting point, primarily for its mature visual odometry (VO) front end and backend helper functions.
-
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
 From the start, I knew that a well-structured development plan would be essential to the successful implementation of this project. An entire suite of infrastructure had to be implemented to aid the development of my distributed SLAM system, including: \noparskip
@@ -110,34 +105,42 @@ From the start, I knew that a well-structured development plan would be essentia
 \subsection{Webots Simulation Software}
 \label{sec:webots-simulator}
 
-Robotics projects work in the physical domain, however testing in the real world requires a large amount of setup and infrastructure. To ensure fast iteration, I decided to use simulations for the majority of my development, allowing me to easily test my system in various environments and scenarios before committing to deploying it on physical robots. Additionally, it allowed me to record numerous test cases which I used as regression tests and benchmarks for my system throughout development.
+Robotics projects work in the physical domain, however testing in the real world requires a large amount of setup and infrastructure. To ensure fast iteration, I decided to use simulations for the majority of my development, allowing me to easily test my system in various environments and scenarios before committing to deploying it on physical robots.
 
-TODO: ...
+The details of integrating Webots into my project are explored in the \autoref{sec:simulation-environment} Section, including the ROS interfaces developed and agent controllers.
 
+\subsection{Testing Infrastructure}
+\label{sec:testing-infrastructure}
+
+Along with being very useful for real-time testing, the simulation software also allowed me to record numerous test cases which I used as regression tests and benchmarks for my system throughout development.
+
+I have built a central management interface that allows me to record and replay datasets from the simulation software, among many other functions. There are datasets for testing all core functionality of my SLAM system, which I would run at regular intervals during development to ensure that no features had regressed and to ensure performance was improving.
 
 \subsection{Robot Operating System 2 Communication Middleware}
 \label{sec:ros-2}
 Robot Operating System (ROS) 2 is the glue holding everything together, allowing independent software processes and hardware to communicate through an abstracted messaging interface.
 
-ROS has long been the industry standard, being almost ubiquitous in both robotics research and the commercial sector. Confusingly, ROS is not an operating system at all, but instead a cross-platform development framework that provides a middleware to facilitate reliable communication between independent processes called \textit{nodes}. These nodes can be on the same device or on a device within the local area network and may be written in C++ or Python. Nodes communicate by \textit{publishing} and \textit{subscribing} to different \textit{topics}, allowing both peer-to-peer communication and broadcasting.
+ROS has long been the industry standard, being almost ubiquitous in both robotics research and the commercial sector. Confusingly, ROS is not an operating system at all, but instead a cross-platform development framework that provides a middleware to facilitate reliable communication between independent processes called \textit{nodes}. These nodes can be on the same device or a device within the local area network and may be written in C++ or Python. Nodes communicate by \textit{publishing} and \textit{subscribing} to different \textit{topics}, allowing both peer-to-peer communication and broadcasting.
 
-This is best illustrated with an example. Below is a toy distributed SLAM system. Given agents $\{ \texttt{agent}_n \ | \ n \in \{1, 2\} \}$, each agent has a camera which publishes to the $\texttt{/agent}_n$\verb|/camera| topic. The $\texttt{SLAM\_Processor}_n$ node subscribes to the $\texttt{/agent}_n$\verb|/camera| topic, and performs simultaneous localization and mapping using the image stream. The $\texttt{SLAM\_Processor}_n$ node then publishes to the $\texttt{/agent}_n$\verb|/new_map_data| topic, which the other agent can subscribe to and use to improve their local map.
+% This is best illustrated with an example. Below is a toy distributed SLAM system. Given agents $\{ \texttt{agent}_n \ | \ n \in \{1, 2\} \}$, each agent has a camera which publishes to the $\texttt{/agent}_n$\verb|/camera| topic. The $\texttt{SLAM\_Processor}_n$ node subscribes to the $\texttt{/agent}_n$\verb|/camera| topic, and performs simultaneous localization and mapping using the image stream. The $\texttt{SLAM\_Processor}_n$ node then publishes to the $\texttt{/agent}_n$\verb|/new_map_data| topic, which the other agent can subscribe to and use to improve their local map.
 
-todo: add diagram
+% todo: add diagram
 
-Since every node is abstracted away behind the interface provided by the various topics, we can easily swap out nodes in this system. For example, we can substitute the real camera for a simulated camera to test our system in a virtual environment without having to change any other part of our system. This makes transitioning between the real and simulated world almost seamless, which I knew would be essential for this project as I planned to test my system in simulations before running it on physical robots.
+Since every node is abstracted away behind the interface provided by the various topics, we can easily swap out nodes in this system. For example, we can substitute the real camera for a simulated camera to test our system in a virtual environment without having to change any other part of our system – as shown in \autoref{fig:abstract-camera-interface}. This makes transitioning between the real and simulated world almost seamless, which I knew would be essential for this project as I planned to test my system in simulations before running it on physical robots.
 
-Furthermore, using the ROS framework allows my code to be far more portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system with minimal effort. This turns my project from simply being a nice codebase to something that anyone can take and run on their own robots.
+\begin{figure}[h]
+    \centering
+    \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.2]{figures/abstract_camera_interface.pdf}
 
-There are two versions of ROS: ROS 1 and ROS 2. ROS 2 has slightly less software support than ROS 1, but I chose to use it due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnotemark[1] specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
+    \caption{All robot types inherit the abstract robot interface, allowing my SLAM system and its supporting infrastructure to be completely agnostic to the actual type of robot used.}
+    \label{fig:abstract-camera-interface}
+\end{figure}
+
+Furthermore, using the ROS framework allows my code to be far more portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system with minimal effort. This turns my project from being something that only runs on my hardware to something that anyone can take and run on their own robot.
+
+There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnotemark[1] specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
 
 \footnotetext[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}}
-
-\subsection{Testing Infrastructure}
-\label{sec:testing-infrastructure}
-
-\subsection{Visualization Tools}
-\label{sec:visualization-tools}
 
 \subsection{Docker Containers}
 \label{sec:docker-containers}
@@ -151,13 +154,20 @@ My GitHub repositories are set up to perform continuous integration via GitHub A
 
 Additionally, a Docker container is cross-compiled to \texttt{arm64} and uploaded to Docker Hub. These Docker images can then be downloaded to the Cambridge RoboMasters (the platform used for real-world testing) and immediately run. This greatly speeds up development, as compiling the codebase locally on the Cambridge RoboMasters takes over 20 minutes for each robot.
 
-Aside from the core packages, we also perform continuous integration as well as continuous deployment for the Raspberry Pi video publisher package. A Docker container is similarly cross-compiled to \texttt{arm64} and uploaded to Docker Hub, and it is automatically deployed to the Raspberry Pis so they will run the latest version of the package.
+Aside from the core packages, we also perform continuous integration as well as continuous deployment for the Raspberry Pi video publisher package. This pipeline is displayed in \autoref{fig:cicd-diagram}. A Docker container is similarly cross-compiled to \texttt{arm64} and uploaded to Docker Hub, and it is automatically deployed to the Raspberry Pis so they will run the latest version of the package.
 
 Continuous deployment makes sense for this use case as the Raspberry Pis are designed to be plug-and-play, starting video streaming as soon as they are turned on. Unlike the Cambridge RoboMasters which are frequently ssh'ed into to pull specific Docker images and start experiments, we want the Raspberry Pis to use the latest software as soon as it is pushed to the GitHub repository.
 
 The ease of use of the Raspberry Pi ROS video publisher platform that I have developed has made them an invaluable tool in the Prorok Lab, even being used by other researchers. TODO: get other people to use them lol
 
-TODO: add diagram
+\begin{figure}[h]
+    \centering
+    \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.2]{figures/cicd_diagram.pdf}
+
+    \caption{Automated continuous integration pipeline for the Cambridge RoboMasters. Continuous deployment is implemented for the Raspberry Pi video publishers by pulling from Docker Hub and running the container on startup.}
+    \label{fig:cicd-diagram}
+\end{figure}
+
 
 \section{Datasets}
 \label{sec:datasets}
@@ -183,7 +193,4 @@ This section will briefly cover some of the existing algorithms utilized within 
 
 \subsection{Development Model}
 \label{sec:development-model}
-
-\subsection{Version Control and Testing}
-\label{sec:version-control-and-testing}
 
