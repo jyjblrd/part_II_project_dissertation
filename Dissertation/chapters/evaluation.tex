@@ -19,7 +19,7 @@ My project has met all success criteria as outlined below:
     Agents fall back to performing single-agent visual SLAM when communication with their peers is degraded or lost. Once communication is regained, the agents share their unsent map data.
 
     \item[2.]\textbf{Evaluate the capabilities of the system compared to a comparable single-agent system.} \\
-    This is done in the \nameref{sec:benchmarking} Section. I go beyond the original success criteria by also comparing my system to comparable multi-agent systems, demonstrating my system's superior performance.
+    This is done in the \nameref{sec:benchmarking} section. I go beyond the original success criteria by also comparing my system to comparable multi-agent systems, demonstrating my system's superior performance.
 
 \end{enumerate}
 
@@ -62,7 +62,7 @@ To further analyze the characteristics of my SLAM system, we focus on an individ
 
 We now analyze the network usage presented in \autoref{fig:euroc-mh-01-02-bandwith}. Initially, the agents send bag of word information before quickly detecing a merge opportunity. Agent 1 procedes to send its full map to agent 2, which can be seen in the large initial spike in network bandwith. The agents successfully merge, and begin exchanging key frames. The rate of key frame data being sent rises and falls depending on how much new area the agent is exploring.
 
-Along with sending key frames, the agents sporadically send map points to refine their map alignment. This occurs less frequently the longer system runs due to the additive increase multiplicative decrease method used to schedule map alignments, described in the \nameref{sec:map-alignment-refiner} Section. However, the size of the messages also grows over time due to the larger number of tracked map points.
+Along with sending key frames, the agents sporadically send map points to refine their map alignment. This occurs less frequently the longer system runs due to the additive increase multiplicative decrease method used to schedule map alignments, described in the \nameref{sec:map-alignment-refiner} section. However, the size of the messages also grows over time due to the larger number of tracked map points.
 
 The data exchanged between agents largely consists of new key frames, and further work should be dedicated to optimizing the serialized representation of key frames.
 
@@ -249,7 +249,7 @@ Once again, we focus on an individual trial to further evaluate my system. \auto
 \section{Comparison to Related Work}
 \label{sec:comparison-to-related-work}
 
-As discussed in the \nameref{sec:relevant-work} Section, my system is the first decentralized monocular vision SLAM system avaiable. This makes direct comparisons with other multi-agent SLAM systems difficult, as they rely on more accurate but bulky sensors such as stero cameras and LiDAR. However, this section still attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
+As discussed in the \nameref{sec:relevant-work} section, my system is the first decentralized monocular vision SLAM system avaiable. This makes direct comparisons with other multi-agent SLAM systems difficult, as they rely on more accurate but bulky sensors such as stero cameras and LiDAR. However, this section still attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
 
 We are only able to compare results using the EuRoC dataset as it is the only public dataset evaluated by CCM-SLAM. Ideally, I would run more datasets on CCM-SLAM system, however I encountered many issues when trying to build the codebase published alongside their paper. This reinforces the well known reproducibility issues within the field of visual SLAM \autocite{DBLP:journals/corr/abs-2108-01654}. \textbf{My SLAM system is not specifically tweaked to perform well in the EuRoC dataset and we get similarly low RMS ATE values in both the TUM Rooms dataset and real world evaluations.}
 
@@ -320,7 +320,7 @@ Therefore, I believe that the primary benifits of a multi-agent system are its a
 \label{sec:real-world-experiments}
 Deploying my system on physical robots demonstrates its ability to be run in real time within the computational, bandwith and latency constraints of real world systems. Furthermore, it demonstrates the robustness of my development framework which allowed seamless migration from local testing using simulations to a real distributed system using live camera feeds with no changes to my code base.
 
-The details of the real world setup are given in the \nameref{sec:real-world-implementation} Section. In summary, the Cambridge RoboMasters platform was used
+The details of the real world setup are given in the \nameref{sec:real-world-implementation} section. In summary, the Cambridge RoboMasters platform was used
 
 \subsection{Multi-Agent Collision Avoidance}
 \label{sec:multi-agent-collision-avoidance}

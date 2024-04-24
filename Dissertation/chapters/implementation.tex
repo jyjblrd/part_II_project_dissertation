@@ -36,9 +36,9 @@ The SLAM System node is the majority of this project's implementation. It proces
 
 \subsection{Datastructures}
 \label{sec:datastructures}
-A brief discussion of my SLAM system's internal data structures is required to understand the following sections. \autoref{fig:datastructure-diagram} shows the two key data structures: the map database and the visual word set. The map database contains multiple maps, which primarily consist of keyframes and map points. Keyframes are "snapshots" of the world, containing the predicted pose of the agent at that time along with the observed world features which we call "map points". These map points can be observed by multiple keyframes, as shown in \autoref{fig:datastructure-viz}, and when this happens we connect the keyframes with a "co-visible" link.
+A brief discussion of my SLAM system's internal data structures is required to understand the following sections. \autoref{fig:datastructure-diagram} shows the two key data structures: the map database and the visual word set. The map database contains multiple maps, which primarily consist of keyframes and map points. Keyframes are ``snapshots" of the world, containing the predicted pose of the agent at that time along with the observed world features which we call ``map points". These map points can be observed by multiple keyframes, as shown in \autoref{fig:datastructure-viz}, and when this happens we connect the keyframes with a ``co-visible" link.
 
-Keyframes also have multiple "visual words", which are vectors describing the visual contents of the keyframe. These are essential for detecting potential map merges, so we also build a "visual word set" that allows us to find all keyframes that contain a particular visual word.
+Keyframes also have a ``visual words" representation, which are vectors describing the visual contents of the keyframe. These are essential for detecting potential map merges, so we also build a ``visual word set" that allows us to find all keyframes that contain a particular visual word.
 
 
 \begin{figure}[h]
@@ -62,7 +62,7 @@ Keyframes also have multiple "visual words", which are vectors describing the vi
 \label{sec:decentralized-system-manager}
 Decentralized collaborative SLAM systems have significantly more complexity than a single-agent or even centralized collaborative system, due to the complex interactions between agents as they merge maps, lose localization, or lose connection with the network. Therefore, a robust framework must be put in place to ensure the robustness and correctness of the system, which I have implemented in the \texttt{Decentralized System Manager} component.
 
-For the sake of simplicity, the following explanations will explore the interactions between just two agents: a \textit{local} and \textit{external} agent. In the \textit{\nameref{sec:generalizing-to-n-geq-3-agent-systems}} Section, we will show how this easily generalizes to a system with an arbitrary number of agents when augmented by some simple rules.
+For the sake of simplicity, the following explanations will explore the interactions between just two agents: a \textit{local} and \textit{external} agent. In the \textit{\nameref{sec:generalizing-to-n-geq-3-agent-systems}} section, we will show how this easily generalizes to a system with an arbitrary number of agents when augmented by some simple rules.
 
 \subsubsection{State Manager}
 \label{sec:state-manager}
@@ -131,7 +131,7 @@ The external map merger leverages components of the ORB-SLAM3 loop closure modul
 
 By the end of the merge process, the local agent will change its coordinate frame to that of the external agent.
 
-It is important to note that this system requires only one agent to identify and calculate the map merge, significantly reducing the computational overhead of map merging, especially in systems with many agents (further explained in the \nameref{sec:generalizing-to-n-geq-3-agent-systems} Section).
+It is important to note that this system requires only one agent to identify and calculate the map merge, significantly reducing the computational overhead of map merging, especially in systems with many agents (further explained in the \nameref{sec:generalizing-to-n-geq-3-agent-systems} section).
 
 \subsubsection{External KeyFrame Inserter}
 \label{sec:external-key-frame-inserter}
@@ -216,7 +216,7 @@ A key insight of my distributed SLAM system is to delegate all merge operations 
 
 Additionally, having all merge operations performed by the group leader prevents potential race conditions introduced by communication latency within a group, for example two agents within a group both merging with different agents at the same time.
 
-As discussed in the \hyperref[sec:external-map-merge-finder]{External Map Merge Finder} and \hyperref[sec:external-map-merger]{External Map Merger} Sections, the two major operations needed to merge are (1) exchanging visual words to identify visual overlap and therefore merge opportunities and (2) sending over the map and attempting a full map merge.
+As discussed in the \hyperref[sec:external-map-merge-finder]{External Map Merge Finder} and \hyperref[sec:external-map-merger]{External Map Merger} sections, the two major operations needed to merge are (1) exchanging visual words to identify visual overlap and therefore merge opportunities and (2) sending over the map and attempting a full map merge.
 
 Tackling (1) first, instead of the group leader only sending the visual words of its own keyframes, it will send the visual words of all keyframes generated by agents within its group. Keep in mind that it will only be sending these visual words to other group leaders. This introduces no additional intra-group communication, as all agents within a group already send each other all new keyframes.
 
@@ -458,7 +458,7 @@ This method allows us to retroactively transform trajectories into $agnet_0$'s c
 
 \section{Simulation Environment}
 \label{sec:simulation-environment}
-The \hyperref[sec:webots-simulator]{Webots Simulation Software} Section in the Preparation Chapter explains the motivation behind using a simulator. Essentially, leveraging simulations enabled much faster iteration cycles and the ability to test in a variety of environments. This section will focus on the details of integrating the simulation software into my system.
+The \hyperref[sec:webots-simulator]{Webots Simulation Software} section in the Preparation Chapter explains the motivation behind using a simulator. Essentially, leveraging simulations enabled much faster iteration cycles and the ability to test in a variety of environments. This section will focus on the details of integrating the simulation software into my system.
 
 Webots is an open-source 3D robotics simulator with realistic rendering, which is essential for testing a visual SLAM system. Webots can not be built for the ARM Ubuntu VM I used for development, therefore it had to be run on MacOS, and the data was streamed to the Ubuntu VM through a websocket bridge developed by Webots.
 
@@ -497,7 +497,7 @@ The ground truth for my real-world experiments are provided by the Prorok Lab's 
 \label{sec:raspberry-pi-video-publisher}
 This dissertation also presents the Raspberry Pi Video Publisher, an independent piece of infrastructure which I have developed both the hardware and software for. This platform publishes real-time camera data to a ROS topic and can be tracked by the lab's motion capture system. The two primary use cases I have used this platform for are (1) dataset generation and (2) real-time AR visualization of 3D data (\autoref{sec:augmented-reality-visualization}).
 
-As explained in the \nameref{sec:cicd} Section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. This is particularly useful, as it is designed as a plug-and-play system that starts streaming video data as soon as it is turned on.
+As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. This is particularly useful, as it is designed as a plug-and-play system that starts streaming video data as soon as it is turned on.
 
 The hardware for this platform consists of a Raspberry Pi 4b, Raspberry Pi Camera v2, 3D printed frame, and motion capture markers. The 3D-printed frame securely mounts the components together, allowing them to be carried around or mounted to a tripod.
 
@@ -537,85 +537,88 @@ To my knowledge, this system is the first of its kind to be used in such a proje
     \label{fig:ar-overlay-map-points}
 \end{figure}
 
+\newpage
 \section{Repository Overview}
 \label{sec:repository-overview}
-The repository is split into 5 ROS packages.
+This project consists of three separate repositories:
 
-\dirtree{%
-    .1 orb\_slam3\_ros/\DTcomment{Core SLAM system}.
-    .2 configs/\DTcomment{Configuration files for different cameras}.
-    .2 include/\DTcomment{C++ headers for my SLAM system}.
-    .2 src/\DTcomment{Source code for my SLAM system}.
-    .3 orb\_slam3\_wrapper.cpp.
-    .3 peer.cpp.
-    .3 publish\_ros\_viz\_topics.cpp.
-    .3 ros\_mono.cpp\DTcomment{Entrypoint for the SLAM system}.
-    .2 orb\_slam3/\DTcomment{Heavily modified ORB-SLAM3 codebase}.
-    .3 include/\DTcomment{C++ headers}.
-    .3 src/.
+\newcommand{\locindent}{3.3em}
+\newcommand{\locsmallindent}{2em}
+\newcommand{\locdiff}[3]{
+    \makebox[#3][r]{\textcolor{PineGreen}{\texttt{+#1}}}
+    \makebox[#3][r]{\textcolor{BrickRed}{\texttt{-#2}}}
+}
+\newcommand{\locadd}[2]{
+    \makebox[#2][r]{\textcolor{PineGreen}{\texttt{+#1}}}
+    \makebox[#2][r]{}
+}
+\newcommand{\locaddnospace}[2]{
+    \makebox[#2][r]{\textcolor{PineGreen}{\texttt{+#1}}}
+}
+\newcommand{\locdoublespace}[1]{
+    \makebox[#1][r]{}
+    \makebox[#1][r]{}
+}
+\newcommand{\locsinglespace}[1]{
+    \makebox[#1][r]{}
 }
 
-\dirtree{%
-    .1 controller/\DTcomment{Centeral management interface package}.
-    .2 controller/.
-    .3 my\_node.py\DTcomment{Source code for central management interface}.
-}
+The \texttt{part\_ii\_project} repository contains the core SLAM system and all the infrastructure needed to run it. This includes five ROS packages: \texttt{orb\_slam3\_ros}, \texttt{motion\_controller}, \texttt{webots\_sim}, \texttt{controller}, and \texttt{interfaces}, which all follow the standard ROS package structure. \texttt{orb\_slam3\_ros} and \texttt{interfaces} are written in C++ and built using CMake, while the other packages are written in Python.
 
-\dirtree{%
-    .1 controller/\DTcomment{Centeral management interface package}.
-    .2 controller/.
-    .3 my\_node.py\DTcomment{Source code for central management interface}.
-}
+\begin{minipage}{\linewidth}
+    \dirtree{%
+        .1 part\_ii\_project/.
+        .2 src/\DTcomment{\locdiff{1,000}{1,000}{\locindent}}.
+        .3 orb\_slam3\_ros/\DTcomment{Core SLAM package\locdiff{1,000}{1,000}{\locindent}}.
+        .5 configs/\DTcomment{Config for different camera systems\locdoublespace{\locindent}}.
+        .5 src/\DTcomment{Source code for my SLAM system\locadd{1,351}{\locindent}}.
+        .5 orb\_slam3/\DTcomment{Heavily modified ORB-SLAM3 codebase\locdiff{1,000}{1,000}{\locindent}}.
+        .4 ....
+        .3 motion\_controller/\DTcomment{Motion controller package\locdoublespace{\locindent}}.
+        .4 motion\_controller/\DTcomment{\locadd{615}{\locindent}}.
+        .5 collision\_avoidance.py\DTcomment{\locadd{142}{\locindent}}.
+        .5 follow\_the\_leader.py\DTcomment{\locadd{78}{\locindent}}.
+        .5 helpers/\DTcomment{\locadd{325}{\locindent}}.
+        .4 ....
+        .3 webots\_sim/\DTcomment{\locadd{276}{\locindent}}.
+        .4 launch/robot\_launch.py\DTcomment{\locadd{42}{\locindent}}.
+        .4 webots\_sim/robot\_driver.py\DTcomment{\locadd{58}{\locindent}}.
+        .4 worlds/\DTcomment{Simulation environments\locdoublespace{\locindent}}.
+        .4 ....
+        .3 controller/\DTcomment{Centeral management interface package\locadd{442}{\locindent}}.
+        .3 evaluation/\DTcomment{Jupyter Notebooks for evaluation\locadd{10}{\locindent}}.
+        .3 interfaces/\DTcomment{Custom ROS message type definitions\locadd{10}{\locindent}}.
+        .3 tools/\DTcomment{Misc. scripts\locadd{10}{\locindent}}.
+        .2 .github/workflows/config.yml\DTcomment{CI/CD configuration\locadd{73}{\locindent}}.
+        .2 Dockerfile\DTcomment{Main dockerfile for the project\locadd{20}{\locindent}}.
+        .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson\locadd{30}{\locindent}}.
+        .2 ....
+    }
+\end{minipage}
 
-\dirtree{%
-    .1 .
-    .2 src.
-    .3 orb\_slam3\_ros/\DTcomment{Core SLAM system}.
-    .5 configs/\DTcomment{Configuration files for different cameras}.
-    .5 include/\DTcomment{C++ headers for my SLAM system}.
-    .5 src/\DTcomment{Source code for my SLAM system}.
-    .6 orb\_slam3\_wrapper.cpp.
-    .6 peer.cpp.
-    .6 publish\_ros\_viz\_topics.cpp.
-    .6 ros\_mono.cpp\DTcomment{Entrypoint for the SLAM system}.
-    .5 orb\_slam3/\DTcomment{Heavily modified ORB-SLAM3 codebase}.
-    .6 include/\DTcomment{C++ headers}.
-    .6 src/.
-    .
-    .3 evaluation/\DTcomment{Evaluation Jupyter Notebooks}.
-    .4 evaluation.ipynb\DTcomment{Primary evaluation notebook}.
-    .4 mocap\_calibrations.json\DTcomment{Coordinate frame offsets from an objects motion capture to camera coordinate frame}.
-    .4 motion\_capture\_post\_processing.ipynb\DTcomment{Notebook to process and evaluate motion capture data from real-world experiments}.
-    .3 interfaces/\DTcomment{Definitions for custom ROS message types}.
-    .4 msg/\DTcomment{Custom message definitions}.
-    % .5 ChangeCoordinateFrame.msg.
-    % .5 IsLostFromBaseMap.msg.
-    % .5 KeyFrameBowVector.msg.
-    % .5 LoopClosureTriggers.msg.
-    % .5 MapPoint.msg.
-    % .5 MapToAttemptMerge.msg.
-    % .5 NewKeyFrameBows.msg.
-    % .5 NewKeyFrames.msg.
-    % .5 Sim3Transform.msg.
-    % .5 Sim3TransformStamped.msg.
-    % .5 SuccessfullyMerged.msg.
-    % .5 Uuid.msg.
-    .4 srv/\DTcomment{Custom service definitions}.
-    % .5 GetCurrentMap.srv.
-    % .5 GetMapPoints.srv.
-    .4 CMakeLists.txt\DTcomment{Build configuration for the package}.
-    .3 motion\_controller/\DTcomment{Motion controller}.
-    .3 webots\_sim/\DTcomment{Simulation package}.
-    .4 launch/.
-    .5 robot\_launch.py/\DTcomment{Simulation bridge configuration}.
-    .4 webots\_sim/.
-    .5 robot\_driver/\DTcomment{Webots to ROS bridge}.
-    .4 worlds/\DTcomment{Simulation environments}.
-    .5 city.wbt.
-    .5 complete\_apartment.wbt.
-    .4 local\_simulation\_server.py\DTcomment{Server-side Webots bridge script}.
-    .3 tools/\DTcomment{Misc. scripts}.
-    .2 .github/workflows/config.yml\DTcomment{CI/CD configuration}.
-    .2 Dockerfile\DTcomment{Main dockerfile for the project}.
-    .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson}.
-}
+The \texttt{rpi\_ros2\_camera\_publisher} repository contains the code and CI/CD configuration for the Raspberry Pi Video Publisher.
+
+\begin{minipage}{\linewidth}
+    \dirtree{%
+        .1 rpi\_ros2\_camera\_publisher/\DTcomment{\locaddnospace{190}{\locsmallindent}}.
+        .2 src/.
+        .3 send\_images.py\DTcomment{\locaddnospace{132}{\locsmallindent}}.
+        .2 .github/workflows/config.yml\DTcomment{CI/CD configuration\locaddnospace{36}{\locsmallindent}}.
+        .2 Dockerfile\DTcomment{Main dockerfile for the project\locaddnospace{10}{\locsmallindent}}.
+        .2 docker-rpi-cam.service\DTcomment{Systemctl service file\locaddnospace{11}{\locsmallindent}}.
+        .2 ....
+    }
+\end{minipage}
+
+The \texttt{multi\_agent\_evo} repository is a fork of the EVO library and is used to evaluate multi-agent SLAM systems. The changes made to EVO are shown below.
+
+\begin{minipage}{\linewidth}
+    \dirtree{%
+        .1 multi\_agent\_evo/\DTcomment{\locdiff{317}{21}{\locsmallindent}}.
+        .2 evo/.
+        .3 core/\DTcomment{\locdiff{126}{5}{\locsmallindent}}.
+        .3 tools/\DTcomment{\locdiff{189}{16}{\locsmallindent}}.
+        .2 ....
+    }
+\end{minipage}
+

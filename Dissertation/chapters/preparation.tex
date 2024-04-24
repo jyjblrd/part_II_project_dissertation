@@ -73,7 +73,7 @@ In recent years we have seen the emergence of a handful of decentralized multi-a
 TODO: fact check below lol
 Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem. There are various methods to approaching DPGO. SWARM-SLAM(2024) \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents by using algorithms such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however these methods still present a communication overhead and may stall under unreliable communication.
 
-Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with a separate map alignment step. This method has no additional communication overhead, apart from the infrequent map alignment step, and we show its very competitive performance in the \nameref{sec:benchmarking} Section. The details of this are presented in the \nameref{sec:decentralized-system-manager} Section.
+Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with a separate map alignment step. This method has no additional communication overhead, apart from the infrequent map alignment step, and we show its very competitive performance in the \nameref{sec:benchmarking} section. The details of this are presented in the \nameref{sec:decentralized-system-manager} section.
 
 
 % DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} uses the Distributed Gauss-Seidel approach to Distributed Pose Graph Optimization (DPGO) proposed by Choudhary et al. in 2017 \autocite{DBLP:journals/corr/ChoudharyCNRCD17} while Kimera-Multi(2022) \autocite{tian22tro_kimeramulti} utilizes distributed graduated non-convexity for DPGO. However,
@@ -100,23 +100,114 @@ Instead of performing discrete optimization runs, my method of DPGO is performed
 
 \section{Visual SLAM Background}
 \label{sec:visual-slam-background}
-Before developing a distributed multi-agent SLAM system, we must first understand the basics of a visual SLAM. This is a topic on which numerous books \autocite{gao2021introduction} and research papers \autocite{durrant2006simultaneous} have discussed in depth, which I will attempt to summarize here.
-
-\subsection{Problem Statement}
-\label{sec:visual-slam-problem-statement}
-
+Before developing a distributed multi-agent SLAM system, we must first understand the basics of a visual SLAM. This is a topic on which numerous books \autocite{gao2021introduction} and research papers \autocite{durrant2006simultaneous} have discussed in depth, which I will attempt to summarize here. This is a greatly simplified explanation, with modern SLAM implementations being tens of thousands of lines long.
 
 \subsection{Visual Odometry}
 \label{sec:visual-slam-visual-odometry}
+Before understanding visual SLAM, it is helpful to first understand a simpler problem – visual odometry (VO). VO is the process of estimating the trajectory of a camera based on the sequence of images produced by it. The core idea is to track features across consecutive images, and by observing how the features move relative to one another it is possible to infer the motion of the camera.
 
+Take, for example, the two images from the KITTI00 dataset presented in \autoref{fig:vo-example-images}. We can see that \autoref{fig:vo-example-image-b} is taken a few meters in front of \autoref{fig:vo-example-image-a} because the car on the left is closer in the second image, and the roof on the left becomes larger, etc. The goal of VO is to compute this change in pose between the two images.
 
-\subsection{Feature Descriptors}
-\label{sec:visual-slam-feature-descriptors}
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.475\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/vo_image_8.png}
+        \caption{}
+        \label{fig:vo-example-image-a}
+    \end{subfigure}\hfill%
+    ~
+    \begin{subfigure}[b]{0.475\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/vo_image_9.png}
+        \caption{}
+        \label{fig:vo-example-image-b}
+    \end{subfigure}%
+    \caption{Example images from KITTI00 dataset for visual odometry example.}
+    \label{fig:vo-example-images}
+\end{figure}
 
-% ...add more
+The first step towards this is to identify common features in both images. For this, we use feature descriptors, which identify image features and represent them as a vector so we can compare similarities between features. The most common feature descriptor for VO and SLAM is the ORB descriptor, due to its low computational cost and invariance to rotation and scale.
+
+\autoref{fig:vo-matches} displays the ORB feature matches between the two images, however it is clear that there are a lot of incorrect matches. This is to be expected, as many elements of the images are repeated (windows, trees, etc).
+
+We can remove a lot of the incorrect correlations by constraining the matches to the epipolar geometry model – essentially telling the computer that the two images are the same scene captured from two different camera poses. Since there are a lot of outliers we use the RANSAC algorithm, described in \autoref{sec:ransac}, to fit the data to the epipolar geometry model. This results in the matches identified in \autoref{fig:vo-matches-ransac}, which are far more accurate. We can see that the window on the left is correctly matched in the two images even though there are many similar windows in the images, demonstrating the importance of fitting our matches to the two-camera epipolar geometry model using RANSAC.
+
+\begin{figure}[h]
+    \centering
+    \captionsetup{format=plain}
+    \begin{minipage}[t]{0.475\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/vo_matches.pdf}
+        \caption{Feature descriptor matches between the two images.}
+        \label{fig:vo-matches}
+    \end{minipage}\hfill%
+    ~
+    \begin{minipage}[t]{0.475\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/vo_matches_ransac.pdf}
+        \caption{Inlier feature descriptors after fitting the data to the epipolar geometry model using RANSAC.}
+        \label{fig:vo-matches-ransac}
+    \end{minipage}%
+\end{figure}
+
+We can now run the seven-point algorithm on the matches to extract the rotation $\mathbf{R}$ and translation $\mathbf{t}$ between the two images, and consequently triangulate the world features found in both images. This is displayed in \autoref{fig:vo-3d-reconstruction}. By continuing this process for all image pairs in a video, we can estimate the trajectory of the camera as it moves through the world.
+
+\begin{figure}[h]
+    \centering
+    \captionsetup{format=plain}
+    \begin{minipage}[t]{0.475\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/3d_reconstruction.pdf}
+        \caption{Side view of the estimated $\mathbf{R}$ and $\mathbf{t}$ between the two camera poses, and the triangulated feature points.}
+        \label{fig:vo-3d-reconstruction}
+    \end{minipage}\hfill%
+    ~
+    \begin{minipage}[t]{0.475\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/gpo_diagram.pdf}
+        \caption{Graph pose optimization diagram, where $k_i$ is a keyframe and $m_i$ is a feature point. The springs represent constraints between the nodes.}
+        \label{fig:gpo-diagram}
+    \end{minipage}%
+\end{figure}
+
+\subsection{Towards Visual SLAM}
+\label{sec:towards-visual-slam}
+Visual odometry provides a local estimate of trajectories, but since it does not build a map of the world it can not give an accurate global estimate of the agent's trajectory. Visual SLAM solves this problem by constructing a map of the environment, which it uses to estimate the agent's trajectory. Modern systems break this down into three processes: Tracking, Mapping, and Loop Closing.
+
+\subsection{Tracking}
+\label{sec:visual-slam-tracking}
+The tracking step processes image data to compute the pose of the agent within the map. This step leverages many of the core ideas from visual odometry, using feature descriptors to find matches and fitting them to the epipolar geometry model using RANSAC. However, instead of matching features between consecutive images like visual odometry, we find feature matches between the input image and the map we have built. This is possible because the map is essentially a set of feature descriptors and their estimated position in 3D space, allowing our tracking module to find matches and localize the agent.
+
+\subsection{Mapping}
+\label{sec:visual-slam-mapping}
+Mapping builds upon the data gathered during the tracking phase to create a 3D representation of the environment. Many popular visual SLAM implementations use a keyframe-based approach, where the map is estimated using only a few selected image frames, ignoring the information from intermediate frames with little new information. This decouples the mapping and tracking processes, allowing us to perform relatively costly bundle adjustment operations.
+
+\textbf{Pose graph optimization} is the process of minimizing the errors within our map, typically by using a graph optimizer. We represent keyframes and world features as nodes in our graph, with edges being the constraints between nodes, represented by a cost function. For example, if a keyframe observes a feature at position $(-0.23,0.64)$ in their image, an edge between the keyframe and feature will be created with a cost function that is minimized when the estimated keyframe and feature point positions result in the feature being re-projected onto the keyframe at the observed point. Similar edge constraints can be defined between keyframes using IMU measurements or wheel odometry. A graph optimizer can then be used to change the keyframe poses and feature locations to minimize the cost functions, therefore improving our map's accuracy.
+
+We can intuitively think of the edge constraints as springs, all attempting to be their predefined length (given by the different world observations). The graph optimizer moves the keyframes and features around until the system settles into its lowest energy state, where the map agrees with our observations as closely as possible.
+
 
 \subsection{Loop Closure}
 \label{sec:visual-slam-loop-closure}
+Loop closing is crucial for maintaining the long-term accuracy of the SLAM system. It involves recognizing when the agent re-visits a previously mapped location and ``closing the loop'' by correcting the errors that had accumulated over time. We often use a visual bag of words representation of the environment to identify when an agent re-visits an area. When a loop closure is detected, we fuse the duplicate features and use bundle adjustment to re-optimize the map and ensure global consistency.
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.54\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/gpo_loop_closure_1.pdf}
+        \caption{A loop closure is identified and new constraints are added between $k_i$ and $m_0$, $m_1$. The new constraints are initially ``stretched'' since $m_0$ and $m_1$'s location in the map does not correlate with $k_i$'s observation of them.}
+    \end{subfigure}\hfill%
+    ~
+    \begin{subfigure}[t]{0.43\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/gpo_loop_closure_2.pdf}
+        \caption{The graph optimizer adjusts the keyframes and feature point poses so the map better aligns with the observations.}
+    \end{subfigure}%
+    \caption{Loop closure pose graph optimization. The green edges represent the new constraints added by the loop closure.}
+    \label{fig:gpo-loop-closure}
+\end{figure}
 
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
@@ -127,7 +218,7 @@ From the start, I knew that a well-structured development plan would be essentia
 
 Robotics projects work in the physical domain, however testing in the real world requires a large amount of setup and infrastructure. To ensure fast iteration, I decided to use simulations for the majority of my development, allowing me to easily test my system in various environments and scenarios before committing to deploying it on physical robots.
 
-The details of integrating Webots into my project are explored in the \autoref{sec:simulation-environment} Section, including the ROS interfaces developed and agent controllers.
+The details of integrating Webots into my project are explored in the \autoref{sec:simulation-environment} section, including the ROS interfaces developed and agent controllers.
 
 \subsection{Testing Infrastructure}
 \label{sec:testing-infrastructure}
@@ -160,6 +251,8 @@ Furthermore, using the ROS framework allows my code to be far more portable, as 
 
 There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnote[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}} specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
 
+TODO: clangd and build stuff?
+
 \subsection{Docker Containers}
 \label{sec:docker-containers}
 Docker containers are used on all physical deployments of my software, including the Cambridge RoboMasters used for real-world testing of my SLAM system and my Raspberry Pi Video Publisher platform which is used for custom dataset collection and augmented reality visualizations.
@@ -189,13 +282,13 @@ The ease of use of the Raspberry Pi ROS video publisher platform that I have dev
 
 \section{Datasets}
 \label{sec:datasets}
-A variety of industry-standard datasets were utilized to benchmark the performance of my SLAM system, including the EuRoC Machine Hall \autocite{burri2016euroc} and TUM-VI \autocite{8593419} datasets. While these datasets provide a variety of sensors, we only utilize a monocular video as input when evaluating performance. Further information about each dataset is provided in the \nameref{sec:benchmarking} Section.
+A variety of industry-standard datasets were utilized to benchmark the performance of my SLAM system, including the EuRoC Machine Hall \autocite{burri2016euroc} and TUM-VI \autocite{8593419} datasets. While these datasets provide a variety of sensors, we only utilize a monocular video as input when evaluating performance. Further information about each dataset is provided in the \nameref{sec:benchmarking} section.
 
 In addition to standard datasets, I also generated custom datasets within the simulated environment to use as regression tests during development. These datasets test individual capabilities of the system such as multi-agent map merging, losing localization, etc. I then ran these tests on my system to ensure that the system performed as expected and that metrics such as time-to-merge and average trajectory error were decreasing as I iterated on my system.
 
 \section{Algorithms}
 \label{sec:algorithms}
-This section will briefly cover some of the existing algorithms utilized within my SLAM system, and can be used as a reference when reading the \nameref{sec:3} Section.
+This section will briefly cover some of the existing algorithms utilized within my SLAM system, and can be used as a reference when reading the \nameref{sec:3} section.
 
 \subsection{Kabsch-Umeyama Algorithm}
 \label{sec:kabsch-umeyama-algorithm}
