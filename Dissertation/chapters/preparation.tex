@@ -20,10 +20,7 @@ While ORB-SLAM3 is an excellent SLAM system, it is fundamentally a single-agent 
 
 Nevertheless, using a cutting-edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that performs better than comparable state-of-the-art systems, making it suitable for real-world applications.
 
-At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autocite{ORBSLAM3_TRO} git repository\footnotemark[1] and explored the codebase. ORB-SLAM3 is licensed under GPL-3.0, and as such, I have open-sourced my code under the same license\footnotemark[2].
-
-\footnotetext[1]{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}}
-\footnotetext[2]{\url{https://github.com/jyjblrd/part_II_project} TODO: Redact}
+At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autocite{ORBSLAM3_TRO} git repository\footnote[1]{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}} and explored the codebase. ORB-SLAM3 is licensed under GPL-3.0, and as such, I have open-sourced my code under the same license.
 
 I had no prior experience working with SLAM systems, but I had researched the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it from being a duplication of prior work.
 
@@ -32,20 +29,51 @@ I had no prior experience working with SLAM systems, but I had researched the cu
 While single-agent SLAM systems are a relatively mature field of research, multi-agent systems are still very much in active development.
 
 
-TODO: move to PGO section?
-Pose Graph Optimization (PGO) is the backbone of many modern SLAM systems, and is essential to understanding how multi-agent systems operate. PGO is an optimization method, which represents agent poses and landmarks as nodes on a graph and constraints as edges between these nodes. For example, if a pose observes a landmark there will be a constraint (represented by a cost function) describing the landmark's location relative to the pose. PGO works by optimizing this graph, optimizing the pose and landmark locations to best satisfy the constraints.
+TODO: even include?
+% Pose Graph Optimization (PGO) is the backbone of many modern SLAM systems, and is essential to understanding how multi-agent systems operate. PGO is an optimization method, which represents agent poses and landmarks as nodes on a graph and constraints as edges between these nodes. For example, if a pose observes a landmark there will be a constraint (represented by a cost function) describing the landmark's location relative to the pose. PGO works by optimizing this graph, optimizing the pose and landmark locations to best satisfy the constraints.
 
 Centralized multi-agent systems such as CCM-SLAM(2019) \autocite{schmuck2019ccm} and COVINS(2021) \autocite{schmuck2021covins} require a centralized server to perform map merges and PGO. While simpler to implement, this comes with the obvious limitations that come with centralized systems such as scalability issues and requiring existing networking infrastructure.
 
 In recent years we have seen the emergence of a handful of decentralized multi-agent systems, however they have various limitations. Various systems such as \autocite{doi:10.1126/scirobotics.abm5954} \autocite{8658783} \autocite{DBLP:journals/corr/abs-2103-12770} require the agents to be initialized with their ground truth poses, which limits their real-world usability. In contrast, my system is able to provide accurate relative localization even when agents are initialized in arbitrary and unknown locations by identifying common landmarks in the world.
 
-Table TODO lays out the sensor configurations used by other various state-of-the-art distributed SLAM systems, showing that my system stands out as the only one capable of operating with purely monocular visual data. This is advantageous, as LiDAR \& RGBD sensors have considerable weight, and stereo cameras may require a minimum camera separation to operate, both of which limit their usage on small aerial robots.
+\autoref{fig:related-work-sensor-configurations} lays out the sensor configurations used by other various state-of-the-art distributed SLAM systems, showing that my system stands out as the only distributed system capable of operating with purely monocular visual data. This is advantageous, as LiDAR,  \& RGBD sensors have considerable weight, and stereo cameras may require a minimum camera separation to operate, both of which limit their usage on small aerial robots.
+
+\begin{figure}[h]
+    \centering
+    \adjustbox{valign=t, width=\linewidth}{
+        \def\arraystretch{1.2}
+        \begin{tabular}{ |l|c|c|c|c|c|c|c| }
+            \hline
+            \multirow{2}{*}{\textbf{System}} & \textbf{Collaboration} & \multirow{2}{*}{\textbf{Monocular}} & \multirow{2}{*}{\textbf{Stereo}} & \textbf{Monocular} & \textbf{Stereo} & \textbf{LiDAR} & \textbf{RGBD} \\
+                                             & \textbf{Type}          &                                     &                                  & \textbf{+IMU}      & \textbf{+IMU}   & \textbf{+IMU}  & \textbf{+IMU} \\
+
+            \hline
+            \textbf{My System}               & Decentralized          & X                                   &                                  &                    &                 &                &               \\
+            \hline
+            \textbf{$D^2$SLAM}               & Decentralized          &                                     &                                  &                    & X               &                &               \\
+            \hline
+            \textbf{CCM-SLAM}                & Centralized            & X                                   &                                  &                    &                 &                &               \\
+            \hline
+            \textbf{COVINS}                  & Centralized            &                                     &                                  & X                  &                 &                &               \\
+            \hline
+            \textbf{Kimera-multi}            & Decentralized          &                                     &                                  &                    & X               &                & X             \\
+            \hline
+            \textbf{Swarm-SLAM}              & Decentralized          &                                     &                                  &                    & X               & X              & X             \\
+            \hline
+            \textbf{DOOR-SLAM}               & Decentralized          &                                     &                                  &                    & X               &                &               \\
+            \hline
+        \end{tabular}
+    }
+
+    \caption{Comparison of modern multi-agent SLAM systems. My SLAM system is the only decentralized monocular system available.}
+    \label{fig:related-work-sensor-configurations}
+\end{figure}
 
 
 TODO: fact check below lol
 Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem. There are various methods to approaching DPGO. SWARM-SLAM(2024) \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents by using algorithms such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however these methods still present a communication overhead and may stall under unreliable communication.
 
-Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with an additional map alignment step performed on a timer. This method has no additional communication overhead, apart from the infrequent map alignment step, and we analyze its performance in the \nameref{sec:benchmarking} Section. The details of this are presented in the \nameref{sec:decentralized-system-manager} Section.
+Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with a separate map alignment step. This method has no additional communication overhead, apart from the infrequent map alignment step, and we show its very competitive performance in the \nameref{sec:benchmarking} Section. The details of this are presented in the \nameref{sec:decentralized-system-manager} Section.
 
 
 % DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} uses the Distributed Gauss-Seidel approach to Distributed Pose Graph Optimization (DPGO) proposed by Choudhary et al. in 2017 \autocite{DBLP:journals/corr/ChoudharyCNRCD17} while Kimera-Multi(2022) \autocite{tian22tro_kimeramulti} utilizes distributed graduated non-convexity for DPGO. However,
@@ -92,15 +120,7 @@ Before developing a distributed multi-agent SLAM system, we must first understan
 
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
-From the start, I knew that a well-structured development plan would be essential to the successful implementation of this project. An entire suite of infrastructure had to be implemented to aid the development of my distributed SLAM system, including: \noparskip
-{
-    \begin{itemize}[nosep]
-        \item Simulation software
-        \item Saving and loading test cases
-        \item Motion control systems
-        \item Evaluation libraries
-    \end{itemize}
-}
+From the start, I knew that a well-structured development plan would be essential to the successful implementation of this project. An entire suite of infrastructure had to be implemented to aid the development of my distributed SLAM system.
 
 \subsection{Webots Simulation Software}
 \label{sec:webots-simulator}
@@ -138,9 +158,7 @@ Since every node is abstracted away behind the interface provided by the various
 
 Furthermore, using the ROS framework allows my code to be far more portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system with minimal effort. This turns my project from being something that only runs on my hardware to something that anyone can take and run on their own robot.
 
-There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnotemark[1] specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
-
-\footnotetext[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}}
+There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnote[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}} specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
 
 \subsection{Docker Containers}
 \label{sec:docker-containers}

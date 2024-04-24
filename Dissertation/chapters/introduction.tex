@@ -3,11 +3,7 @@
 \label{sec:introduction}
 Visual Simultaneous Localization and Mapping (visual SLAM) serves as the foundation of countless modern technologies, with self-driving cars, augmented reality devices and autonomous drones just being a few examples. By using purely visual inputs, visual SLAM is able to create a 3D map of the surroundings while also localizing the camera's position within this map in real time.
 
-Unlike other SLAM systems which may use expensive and heavy sensor such as LIDAR, RGB-Depth cameras or Radar, visual SLAM only requires the ubiquitous camera sensor, allowing the technology to be used in many commercial applications such as Google's ARCore\footnotemark[1], Boston Dynamic's GraphNav system used on their robot Spot\footnotemark[2], and several models of DJI quadcopters\footnotemark[3] making this a particularly practical field of research.
-
-\footnotetext[1]{https://developers.google.com/ar/develop/fundamentals}
-\footnotetext[2]{https://support.bostondynamics.com/s/article/GraphNav-Technical-Summary}
-\footnotetext[3]{DOI: 10.1016/j.vrih.2019.09.002}
+Unlike other SLAM systems which may use expensive and heavy sensor such as LIDAR, RGB-Depth cameras or Radar, visual SLAM only requires the ubiquitous camera sensor, allowing the technology to be used in many commercial applications such as Google's ARCore\footnote[1]{\url{https://developers.google.com/ar/develop/fundamentals}}, Boston Dynamic's GraphNav system used on their robot Spot\footnote[2]{\url{https://support.bostondynamics.com/s/article/GraphNav-Technical-Summary}}, and several models of DJI quadcopters\footnote[3]{DOI: 10.1016/j.vrih.2019.09.002} making this a particularly practical field of research.
 
 \section{Motivation}
 \label{sec:motivation}
@@ -36,8 +32,8 @@ In this project, I: \noparskip
         \item Design and implement a distributed multi-agent visual SLAM system that is capable of localization, relative pose estimation and  collaborative mapping, all while being tolerant to degraded network conditions and not reliant on any single leader agent.
         \item Create a simulation environment for testing and evaluating my system locally.
         \item Deploy my system on physical robots, demonstrating the practical use cases of this system and benchmarking real world performance.
-        \item Develop \textit{Multi-Agent EVO} – an evaluation library for multi-agent SLAM systems based on \textit{EVO} \autocite{grupp2017evo}.
-        \item Develop the \textit{Raspberry Pi Video Publisher} – a generic platform which can be used for data collection or augmented reality visualizations.
+        \item Develop \textit{Multi-Agent EVO} – the first open source evaluation library for multi-agent SLAM systems.
+        \item Develop the \textit{Raspberry Pi Video Publisher} – a generic platform for SLAM data collection or augmented reality visualizations.
         \item Evaluate the performance of my system on standardized datasets, \textbf{demonstrating that its performace is superior to comparable state-of-the-art systems}.
     \end{enumerate}
 }
