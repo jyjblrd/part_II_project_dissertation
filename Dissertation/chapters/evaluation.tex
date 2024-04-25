@@ -19,14 +19,14 @@ My project has met all success criteria as outlined below:
     Agents fall back to performing single-agent visual SLAM when communication with their peers is degraded or lost. Once communication is regained, the agents share their unsent map data.
 
     \item[2.]\textbf{Evaluate the capabilities of the system compared to a comparable single-agent system.} \\
-    This is done in the \nameref{sec:benchmarking} section. I go beyond the original success criteria by also comparing my system to comparable multi-agent systems, demonstrating my system's superior performance.
+    This is performed in the \nameref{sec:benchmarking} section. I go beyond the original success criteria by also comparing my system to comparable multi-agent systems, demonstrating my system's superior performance.
 
 \end{enumerate}
 
 
 After discussions with my supervisor, we decided to not pursue my original project extensions of optimizing data transfer rates and adding additional sensors inputs to the system. We instead chose to focus on deploying the SLAM system on physical robots and building infrastructure around the system to improve usability and benifit the wider open source community.
 
-Deploying my system on real robots was a considerable amount of work, however I beleive it was important as it provides
+Deploying my system on real robots was a considerable amount of work, however I beleive it was important as it provides evidence of the real world usability of my system and how my sofware engineering decisions has allowed it to easily be deployed to real robots. Additionaly it demonstrates my system working in a real distributed system as opposed to simuluations on a single device.
 
 \section{Benchmarking}
 \label{sec:benchmarking}
@@ -73,7 +73,7 @@ The data exchanged between agents largely consists of new key frames, and furthe
         \marginbox{0 0 0 0} {
             \includegraphics[width=\linewidth, valign=t]{figures/apr11_mh_trajectory_b_bandwith.pdf}
         }
-        \caption{Total system data over time}
+        \caption{Total system data over time, segregated by message type}
     \end{subfigure}%
     ~
     \begin{subfigure}[b]{0.45\linewidth}
@@ -216,7 +216,7 @@ Once again, we focus on an individual trial to further evaluate my system. \auto
                 \end{tabular}
             }
         }
-        \caption{Total system data by message type}
+        \caption{Total system data by message type, segregated by message type}
         \vfill
 
         \adjustbox{valign=b, width=\linewidth}{
@@ -251,7 +251,7 @@ Once again, we focus on an individual trial to further evaluate my system. \auto
 
 As discussed in the \nameref{sec:relevant-work} section, my system is the first decentralized monocular vision SLAM system avaiable. This makes direct comparisons with other multi-agent SLAM systems difficult, as they rely on more accurate but bulky sensors such as stero cameras and LiDAR. However, this section still attempts to compare my system to the latest research in the field to give context to its performance relative to other state of the art systems.
 
-We are only able to compare results using the EuRoC dataset as it is the only public dataset evaluated by CCM-SLAM. Ideally, I would run more datasets on CCM-SLAM system, however I encountered many issues when trying to build the codebase published alongside their paper. This reinforces the well known reproducibility issues within the field of visual SLAM \autocite{DBLP:journals/corr/abs-2108-01654}. \textbf{My SLAM system is not specifically tweaked to perform well in the EuRoC dataset and we get similarly low RMS ATE values in both the TUM Rooms dataset and real world evaluations.}
+We are only able to compare results using the EuRoC dataset as it is the only public dataset evaluated by CCM-SLAM. Ideally, I would run more datasets on CCM-SLAM system, however I encountered many issues when trying to build the codebase published alongside their paper. This reinforces the well known reproducibility issues within the field of visual SLAM \autocite{DBLP:journals/corr/abs-2108-01654}, which I have attempted to mitigate in my own project by publishing pre-compiled docker containers alongside my code. \textbf{My SLAM system is not specifically tweaked to perform well in the EuRoC dataset and we get similarly low RMS ATE values in both the TUM Rooms dataset and real world evaluations.}
 
 \subsection{CCM-SLAM}
 \label{sec:ccm-slam}

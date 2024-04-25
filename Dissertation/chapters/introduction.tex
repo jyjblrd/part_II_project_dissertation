@@ -7,7 +7,7 @@ Unlike other SLAM systems which may use expensive and heavy sensor such as LIDAR
 
 \section{Motivation}
 \label{sec:motivation}
-Multi-robot systems are only becoming more common as automation in numerous fields continues to grow, such as self-driving cars, drone swarms and warehouse robots. These systems require the agents to understand the world around them, as know each other's locations within that world for collision avoidance. This task is often achieved with technologies such as GPS or motion capture setups, however we can not assume that all environments will have access to these systems. A few emerging examples include: \noparskip
+Multi-robot systems are only becoming more common as automation continues to grow in a variety of fields, such as self-driving cars, drone swarms and warehouse robots. These systems require the agents to understand the world around them as well as their peer's locations within that world to facilitate collision avoidance. This task is often achieved with technologies such as GPS or motion capture setups, however not all environments have access to these systems. A few emerging examples include: \noparskip
 \smallbreak
 
 {
@@ -18,7 +18,7 @@ Multi-robot systems are only becoming more common as automation in numerous fiel
     \end{itemize}
 }
 
-These are scenarios where multi-agent SLAM is able to assist, as it enables us to build a map of an unknown environment and keep agents aware of their relative poses. However, the majority of existing multi-agent visual SLAM implementations are centralized systems, requiring the agents to maintain reliable communications with the central server in order to operate. This is somewhat counterintuitive, as environments which don't have access to GPS or motion capture systems are more than likely to also have very poor communication channels -- greatly limiting the use cases of these centralized multi-agent SLAM systems.
+These are scenarios where multi-agent SLAM provides a compelling solution, as it enables us to build a map of an unknown environment and keep agents aware of their relative poses. However, the majority of existing multi-agent visual SLAM implementations are centralized systems, requiring the agents to maintain reliable communications with a central server in order to operate. This is extremely counterproductive, as environments which don't have access to GPS or motion capture systems are more than likely to also have very poor communication channels -- greatly limiting the use cases of these centralized multi-agent SLAM systems.
 
 Naturally, this leaves us with distributed multi-agent visual SLAM systems which do not rely on a centralized management server, allowing the agents to be used in environments where network infrastructure may be lacking. Instead of a central node, the agents are able to communicate peer-to-peer when they come within close proximity with one another.
 

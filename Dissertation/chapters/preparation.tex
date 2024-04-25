@@ -14,7 +14,7 @@
 \label{sec:starting-point}
 As noted in the \hyperref[sec:relevant-work]{\textit{Relevant Work}} section, visual SLAM systems are a mature and well-researched subfield of Computer Science with many advanced implementations. To avoid spending the majority of my effort re-implementing a visual SLAM system from scratch, I instead used a \textbf{single-agent} visual SLAM implementation as the starting point for my project. The thinking behind this decision was that it would allow me to focus my efforts on the distributed multi-agent aspect of this project, which I believe is a novel and under-researched aspect of the field.
 
-I chose ORB-SLAM3 as the single agent SLAM system to base my system on top of, as it ranks at the top of benchmarks in a variety of environments \autocite{DBLP:journals/corr/abs-2108-01654} and its researchers released code alongside their paper. I primarily utilized the system's visual odometry (VO) front end and helper functions from the backend to perform operations such as bundle adjustment.
+I chose ORB-SLAM3 as the single agent SLAM system to base my system on top of, as it ranks at the top of benchmarks in a variety of environments \autocite{DBLP:journals/corr/abs-2108-01654} and its researchers released code alongside their paper. I primarily utilized the system's visual odometry (VO) front end and helper functions from the backend to perform operations such as pose.
 
 While ORB-SLAM3 is an excellent SLAM system, it is fundamentally a single-agent system with no considerations in place for use in a multi-agent context. As I will expand on in the \hyperref[sec:orb-slam-3]{\textit{ORB-SLAM 3}} section, a significant amount of time and effort was required to understand its extremely large undocumented codebase, especially since an almost complete understanding of its inner workings were needed to both extract and inject map information from the system. In retrospect, using an existing single-agent SLAM system as a foundation may not have saved as much time as I had initially hoped. I spent all of Michaelmas term wrangling with ORB-SLAM's codebase and was not able to begin making proper progress on the distributed aspect of my project until after Christmas break.
 
@@ -24,79 +24,6 @@ At the time of submitting my project proposal, I had forked the ORB-SLAM3 \autoc
 
 I had no prior experience working with SLAM systems, but I had researched the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it from being a duplication of prior work.
 
-\section{Relevant Work}
-\label{sec:relevant-work}
-While single-agent SLAM systems are a relatively mature field of research, multi-agent systems are still very much in active development.
-
-
-TODO: even include?
-% Pose Graph Optimization (PGO) is the backbone of many modern SLAM systems, and is essential to understanding how multi-agent systems operate. PGO is an optimization method, which represents agent poses and landmarks as nodes on a graph and constraints as edges between these nodes. For example, if a pose observes a landmark there will be a constraint (represented by a cost function) describing the landmark's location relative to the pose. PGO works by optimizing this graph, optimizing the pose and landmark locations to best satisfy the constraints.
-
-Centralized multi-agent systems such as CCM-SLAM(2019) \autocite{schmuck2019ccm} and COVINS(2021) \autocite{schmuck2021covins} require a centralized server to perform map merges and PGO. While simpler to implement, this comes with the obvious limitations that come with centralized systems such as scalability issues and requiring existing networking infrastructure.
-
-In recent years we have seen the emergence of a handful of decentralized multi-agent systems, however they have various limitations. Various systems such as \autocite{doi:10.1126/scirobotics.abm5954} \autocite{8658783} \autocite{DBLP:journals/corr/abs-2103-12770} require the agents to be initialized with their ground truth poses, which limits their real-world usability. In contrast, my system is able to provide accurate relative localization even when agents are initialized in arbitrary and unknown locations by identifying common landmarks in the world.
-
-\autoref{fig:related-work-sensor-configurations} lays out the sensor configurations used by other various state-of-the-art distributed SLAM systems, showing that my system stands out as the only distributed system capable of operating with purely monocular visual data. This is advantageous, as LiDAR,  \& RGBD sensors have considerable weight, and stereo cameras may require a minimum camera separation to operate, both of which limit their usage on small aerial robots.
-
-\begin{figure}[h]
-    \centering
-    \adjustbox{valign=t, width=\linewidth}{
-        \def\arraystretch{1.2}
-        \begin{tabular}{ |l|c|c|c|c|c|c|c| }
-            \hline
-            \multirow{2}{*}{\textbf{System}} & \textbf{Collaboration} & \multirow{2}{*}{\textbf{Monocular}} & \multirow{2}{*}{\textbf{Stereo}} & \textbf{Monocular} & \textbf{Stereo} & \textbf{LiDAR} & \textbf{RGBD} \\
-                                             & \textbf{Type}          &                                     &                                  & \textbf{+IMU}      & \textbf{+IMU}   & \textbf{+IMU}  & \textbf{+IMU} \\
-
-            \hline
-            \textbf{My System}               & Decentralized          & X                                   &                                  &                    &                 &                &               \\
-            \hline
-            \textbf{$D^2$SLAM}               & Decentralized          &                                     &                                  &                    & X               &                &               \\
-            \hline
-            \textbf{CCM-SLAM}                & Centralized            & X                                   &                                  &                    &                 &                &               \\
-            \hline
-            \textbf{COVINS}                  & Centralized            &                                     &                                  & X                  &                 &                &               \\
-            \hline
-            \textbf{Kimera-multi}            & Decentralized          &                                     &                                  &                    & X               &                & X             \\
-            \hline
-            \textbf{Swarm-SLAM}              & Decentralized          &                                     &                                  &                    & X               & X              & X             \\
-            \hline
-            \textbf{DOOR-SLAM}               & Decentralized          &                                     &                                  &                    & X               &                &               \\
-            \hline
-        \end{tabular}
-    }
-
-    \caption{Comparison of modern multi-agent SLAM systems. My SLAM system is the only decentralized monocular system available.}
-    \label{fig:related-work-sensor-configurations}
-\end{figure}
-
-
-TODO: fact check below lol
-Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem. There are various methods to approaching DPGO. SWARM-SLAM(2024) \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents by using algorithms such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however these methods still present a communication overhead and may stall under unreliable communication.
-
-Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with a separate map alignment step. This method has no additional communication overhead, apart from the infrequent map alignment step, and we show its very competitive performance in the \nameref{sec:benchmarking} section. The details of this are presented in the \nameref{sec:decentralized-system-manager} section.
-
-
-% DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} uses the Distributed Gauss-Seidel approach to Distributed Pose Graph Optimization (DPGO) proposed by Choudhary et al. in 2017 \autocite{DBLP:journals/corr/ChoudharyCNRCD17} while Kimera-Multi(2022) \autocite{tian22tro_kimeramulti} utilizes distributed graduated non-convexity for DPGO. However,
-
-% Xu et al. \autocite{xu2022d} argue that DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} and Kimera-Multi(2022)'s distributed pose graph optimization methods prevent their systems from achieving accurate relative localization. $D^2$SLAM(2022)'s \autocite{xu2022d} near field and far field estimation systems allow it to achieve accurate relative localization while maintaining global consistency, however it
-
-% often use some method of distributed optimization to refine the shared map. Most commonly this is done using Distributed Pose Graph Optimization (DPGO), which globally optimizes the shared map, providing good global consistency but often lacking in relative localization
-
-% Distributed Pose Graph Optimization (DPGO) is the most common technique used in multi-agent SLAM systems. DPGO represents
-
-% $D^2$SLAM(2022) \autocite{xu2022d} uses pose graph  (PGO)
-
-
-
-% While traditionally under-researched, there have been amulti-agent SLAM systems have recently
-
-% Single-agent visual SLAM is a very well researched field, with many advanced implementations avaiable, such as VINS-Mono(2018) \autocite{8421746}, Kimera(2019) \autocite{rosinol2020kimera} and ORB-SLAM3(2020) \autocite{ORBSLAM3_TRO}.
-
-% While single-agent systems are very mature at this point, C-SLAM is a developing field with exciting advancements being made in recent years. C-SLAM is split into two categories: centralized and decentralized. Centralized C-SLAM systems require a centralized server to manage communication between agents and perform map merging. Some examples include CCM-SLAM(2019) \autocite{schmuck2019ccm} and COVINS(2021) \autocite{schmuck2021covins}.
-
-% We will primarily focus on decentralized C-SLAM systems
-
-% todo: add comparison table?
 
 \section{Visual SLAM Background}
 \label{sec:visual-slam-background}
@@ -181,16 +108,16 @@ The tracking step processes image data to compute the pose of the agent within t
 
 \subsection{Mapping}
 \label{sec:visual-slam-mapping}
-Mapping builds upon the data gathered during the tracking phase to create a 3D representation of the environment. Many popular visual SLAM implementations use a keyframe-based approach, where the map is estimated using only a few selected image frames, ignoring the information from intermediate frames with little new information. This decouples the mapping and tracking processes, allowing us to perform relatively costly bundle adjustment operations.
+Mapping builds upon the data gathered during the tracking phase to create a 3D representation of the environment. Many popular visual SLAM implementations use a keyframe-based approach, where the map is estimated using only a few selected image frames, ignoring the information from intermediate frames with little new information. This decouples the mapping and tracking processes, allowing us to perform relatively costly pose operations.
 
-\textbf{Pose graph optimization} is the process of minimizing the errors within our map, typically by using a graph optimizer. We represent keyframes and world features as nodes in our graph, with edges being the constraints between nodes, represented by a cost function. For example, if a keyframe observes a feature at position $(-0.23,0.64)$ in their image, an edge between the keyframe and feature will be created with a cost function that is minimized when the estimated keyframe and feature point positions result in the feature being re-projected onto the keyframe at the observed point. Similar edge constraints can be defined between keyframes using IMU measurements or wheel odometry. A graph optimizer can then be used to change the keyframe poses and feature locations to minimize the cost functions, therefore improving our map's accuracy.
+\textbf{Pose graph optimization} is the process of minimizing the errors within our map, typically by using a graph optimizer. We represent keyframes and world features as nodes in our graph, with edges being the constraints between nodes, represented by a cost function. For example, if a keyframe observes a feature at position (-0.23, 0.64) in their image, an edge between the keyframe and feature will be created with a cost function that is minimized when the estimated keyframe and feature point positions result in the feature being re-projected onto the keyframe at the observed point. Similar edge constraints can be defined between keyframes using IMU measurements or wheel odometry. A graph optimizer can then be used to change the keyframe poses and feature locations to minimize the cost functions, therefore improving our map's accuracy.
 
-We can intuitively think of the edge constraints as springs, all attempting to be their predefined length (given by the different world observations). The graph optimizer moves the keyframes and features around until the system settles into its lowest energy state, where the map agrees with our observations as closely as possible.
+We can intuitively think of the edge constraints as springs, all attempting to revert to their preferred length (given by the different world observations). The graph optimizer moves the keyframes and features around until the system settles into its lowest energy state, where the map agrees with our observations as closely as possible.
 
 
 \subsection{Loop Closure}
 \label{sec:visual-slam-loop-closure}
-Loop closing is crucial for maintaining the long-term accuracy of the SLAM system. It involves recognizing when the agent re-visits a previously mapped location and ``closing the loop'' by correcting the errors that had accumulated over time. We often use a visual bag of words representation of the environment to identify when an agent re-visits an area. When a loop closure is detected, we fuse the duplicate features and use bundle adjustment to re-optimize the map and ensure global consistency.
+Loop closing is crucial for maintaining the long-term accuracy of the SLAM system. It involves recognizing when the agent re-visits a previously mapped location and ``closing the loop'' by correcting the errors that had accumulated over time. We often use a visual bag of words representation of the environment to identify when an agent re-visits an area. When a loop closure is detected, we fuse the duplicate features and use pose to re-optimize the map and ensure global consistency.
 
 \begin{figure}[h]
     \centering
@@ -208,6 +135,77 @@ Loop closing is crucial for maintaining the long-term accuracy of the SLAM syste
     \caption{Loop closure pose graph optimization. The green edges represent the new constraints added by the loop closure.}
     \label{fig:gpo-loop-closure}
 \end{figure}
+
+
+\section{Relevant Work}
+\label{sec:relevant-work}
+While single-agent SLAM systems are a relatively mature field of research, multi-agent systems are still very much in active development.
+
+Centralized multi-agent systems such as CCM-SLAM(2019) \autocite{schmuck2019ccm} and COVINS(2021) \autocite{schmuck2021covins} require a centralized server to perform map merges and PGO. While simpler to implement, this comes with the obvious limitations that come with centralized systems such as scalability issues and requiring existing networking infrastructure.
+
+In recent years we have seen the emergence of a handful of decentralized multi-agent systems, however they have various limitations. Various systems such as \autocite{doi:10.1126/scirobotics.abm5954} \autocite{8658783} \autocite{DBLP:journals/corr/abs-2103-12770} require the agents to be initialized with their ground truth poses, which limits their real-world usability. In contrast, my system is able to provide accurate relative localization even when agents are initialized in arbitrary and unknown locations by identifying common landmarks in the world.
+
+\autoref{fig:related-work-sensor-configurations} lays out the sensor configurations used by other various state-of-the-art distributed SLAM systems, showing that my system stands out as the only distributed system capable of operating with purely monocular visual data. This is advantageous, as LiDAR,  \& RGBD sensors have considerable weight, and stereo cameras may require a minimum camera separation to operate, both of which limit their usage on small aerial robots.
+
+\begin{figure}[h]
+    \centering
+    \adjustbox{valign=t, width=\linewidth}{
+        \def\arraystretch{1.2}
+        \begin{tabular}{ |l|c|c|c|c|c|c|c|c| }
+            \hline
+            \multirow{2}{*}{\textbf{System}} & \multirow{2}{*}{\textbf{Year}} & \textbf{Collaboration} & \multirow{2}{*}{\textbf{Monocular}} & \multirow{2}{*}{\textbf{Stereo}} & \textbf{Monocular}     & \textbf{Stereo}        & \textbf{LiDAR}         & \textbf{RGBD}          \\
+                                             &                                & \textbf{Type}          &                                     &                                  & \textbf{\texttt{+}IMU} & \textbf{\texttt{+}IMU} & \textbf{\texttt{+}IMU} & \textbf{\texttt{+}IMU} \\
+
+            \hline
+            \textbf{My System}               & 2024                           & Decentralized          & X                                   &                                  &                        &                        &                        &                        \\
+            \hline
+            \textbf{$D^2$SLAM}               & 2022                           & Decentralized          &                                     &                                  &                        & X                      &                        &                        \\
+            \hline
+            \textbf{CCM-SLAM}                & 2019                           & Centralized            & X                                   &                                  &                        &                        &                        &                        \\
+            \hline
+            \textbf{COVINS}                  & 2021                           & Centralized            &                                     &                                  & X                      &                        &                        &                        \\
+            \hline
+            \textbf{Kimera-multi}            & 2021                           & Decentralized          &                                     &                                  &                        & X                      &                        & X                      \\
+            \hline
+            \textbf{Swarm-SLAM}              & 2024                           & Decentralized          &                                     &                                  &                        & X                      & X                      & X                      \\
+            \hline
+            \textbf{DOOR-SLAM}               & 2020                           & Decentralized          &                                     &                                  &                        & X                      &                        &                        \\
+            \hline
+        \end{tabular}
+    }
+
+    \caption{Comparison of modern multi-agent SLAM systems. My SLAM system is the only decentralized monocular system available.}
+    \label{fig:related-work-sensor-configurations}
+\end{figure}
+
+
+TODO: fact check below lol
+Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem. There are various methods to approaching DPGO. SWARM-SLAM(2024) \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents by using algorithms such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however these methods still present a communication overhead and may stall under unreliable communication.
+
+Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with a separate map alignment step. This method has no additional communication overhead, apart from the infrequent map alignment step, and we show its performance is very competitive in the \nameref{sec:benchmarking} section. The details of this are presented in the \nameref{sec:decentralized-system-manager} section.
+
+
+% DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} uses the Distributed Gauss-Seidel approach to Distributed Pose Graph Optimization (DPGO) proposed by Choudhary et al. in 2017 \autocite{DBLP:journals/corr/ChoudharyCNRCD17} while Kimera-Multi(2022) \autocite{tian22tro_kimeramulti} utilizes distributed graduated non-convexity for DPGO. However,
+
+% Xu et al. \autocite{xu2022d} argue that DOOR-SLAM(2020) \autocite{Lajoie2020DOORSLAM} and Kimera-Multi(2022)'s distributed pose graph optimization methods prevent their systems from achieving accurate relative localization. $D^2$SLAM(2022)'s \autocite{xu2022d} near field and far field estimation systems allow it to achieve accurate relative localization while maintaining global consistency, however it
+
+% often use some method of distributed optimization to refine the shared map. Most commonly this is done using Distributed Pose Graph Optimization (DPGO), which globally optimizes the shared map, providing good global consistency but often lacking in relative localization
+
+% Distributed Pose Graph Optimization (DPGO) is the most common technique used in multi-agent SLAM systems. DPGO represents
+
+% $D^2$SLAM(2022) \autocite{xu2022d} uses pose graph  (PGO)
+
+
+
+% While traditionally under-researched, there have been amulti-agent SLAM systems have recently
+
+% Single-agent visual SLAM is a very well researched field, with many advanced implementations avaiable, such as VINS-Mono(2018) \autocite{8421746}, Kimera(2019) \autocite{rosinol2020kimera} and ORB-SLAM3(2020) \autocite{ORBSLAM3_TRO}.
+
+% While single-agent systems are very mature at this point, C-SLAM is a developing field with exciting advancements being made in recent years. C-SLAM is split into two categories: centralized and decentralized. Centralized C-SLAM systems require a centralized server to manage communication between agents and perform map merging. Some examples include CCM-SLAM(2019) \autocite{schmuck2019ccm} and COVINS(2021) \autocite{schmuck2021covins}.
+
+% We will primarily focus on decentralized C-SLAM systems
+
+% todo: add comparison table?
 
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
@@ -241,7 +239,7 @@ Since every node is abstracted away behind the interface provided by the various
 
 \begin{figure}[h]
     \centering
-    \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.2]{figures/abstract_camera_interface.pdf}
+    \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.15]{figures/abstract_camera_interface.pdf}
 
     \caption{All robot types inherit the abstract robot interface, allowing my SLAM system and its supporting infrastructure to be completely agnostic to the actual type of robot used.}
     \label{fig:abstract-camera-interface}
@@ -251,7 +249,13 @@ Furthermore, using the ROS framework allows my code to be far more portable, as 
 
 There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnote[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}} specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
 
-TODO: clangd and build stuff?
+\subsection{Repository Setup}
+\label{sec:repository-setup}
+It was essential for me to set up my repository properly before beginning work on this project. Since the majority of my initial effort was spent understanding and modifying ORB-SLAM3, I set up clangd to add smart code suggestions to my project based on my CMake profile. This was extremely helpful, as ORB-SLAM3 had no documentation or comments, and variables were often not given useful names. Additionally, I set up formatters to autoformat my C++ and Python code on save.
+
+Throughout my project, I made extensive use of the GNU Project Debugger to identify bugs within my codebase, especially issues brought about by multithreading.
+
+The five ROS packages in my repository also follow the standard file structure, allowing others to easily understand and modify it.
 
 \subsection{Docker Containers}
 \label{sec:docker-containers}
@@ -288,20 +292,157 @@ In addition to standard datasets, I also generated custom datasets within the si
 
 \section{Algorithms}
 \label{sec:algorithms}
-This section will briefly cover some of the existing algorithms utilized within my SLAM system, and can be used as a reference when reading the \nameref{sec:3} section.
+This section will briefly cover some of the existing algorithms utilized within my SLAM system and can be used as a reference when reading the \nameref{sec:3} section.
 
 \subsection{Kabsch-Umeyama Algorithm}
 \label{sec:kabsch-umeyama-algorithm}
 
+The Kabsch-Umeyama algorithm (\autoref{alg:kabsch-umeyama}) is used to align a set of target points $Q$ to a set of source points $P$ with a SIM(3) transform. Within the field of SLAM, this is primarily used to align the estimated trajectory with the ground truth to evaluate the absolute trajectory error, where the estimated trajectory may be translated, rotated, and scaled differently to the ground truth. Additionally, this algorithm is used for my multi-agent map alignment process.
+
+\begin{algorithm}[H]
+    \setstretch{1.2}
+    \caption{Kabsch-Umeyama Algorithm}
+    \label{alg:kabsch-umeyama}
+    \begin{algorithmic}[1]
+        \State \textbf{Input:} Source points $P$, target points $Q$
+        \State \textbf{Output:} Rotation $R$, scale $s$, and translation $t$ that best aligns $Q$ to $P$
+        \State $n \gets \text{number of points in each set}$
+        \State $\mu_P \gets \frac{1}{n} \sum_{i=1}^n p_i$
+        \State $\mu_Q \gets \frac{1}{n} \sum_{i=1}^n q_i$
+        \State $P' \gets P - \mu_P$ \Comment{Centering $P$}
+        \State $Q' \gets Q - \mu_Q$ \Comment{Centering $Q$}
+        \State $\sigma^2_P \gets \frac{1}{n} \sum_{i=1}^n ||p_i'||^2$ \Comment{Variance of P}
+        \State $H \gets \frac{1}{n} \sum_{i=1}^n p_i'^T q_i'$ \Comment{Covariance matrix}
+        \State $U, D, V^T \gets \text{SVD}(H)$ \Comment{Singular Value Decomposition}
+        \State $S \gets \text{diag}(1, 1, \dots, 1, \det(U)\det(V^T))$
+        \State $R \gets USV^T$ \Comment{Rotation matrix}
+        \State $c \gets \frac{\sigma^2_P}{\text{tr}(DS)}$ \Comment{Scale factor}
+        \State $t \gets \mu_P - cR\mu_Q$ \Comment{Translation}
+        \State \textbf{return} $R, s, t$
+    \end{algorithmic}
+\end{algorithm}
+
 \subsection{Visual Bag of Words}
 \label{sec:visual-bag-of-words}
+Visual bag of words is a method of vectorizing an image based on its features, allowing us to compare the similarities between two images.
+
+To convert our image to a vector, we must first construct our \textit{vocabulary} of features – common and unique features which will each go on to represent a dimension of our final vector. We do this by extracting the features from a large dataset of images and grouping the feature descriptors using an algorithm such as K-Means clustering. The center of the largest clusters can then be extracted and used as our vocabulary of features. This vocabulary generation step only needs to be performed once, preferably using a wide variety of representative images (eg. for visual SLAM this could be images of a variety of environments).
+
+We are now able to vectorize images by counting the number of times each feature within our vocabulary exists in the image.
+
+
+\begin{figure}[h]
+    \captionsetup{format=plain}
+    \begin{minipage}[t]{0.55\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/bow_vocab.pdf}
+
+        \caption{Process of generating the visual bag of word vocabulary. The center of each cluster is added as a feature in the vocabulary.}
+        \label{fig:bow-vocab}
+    \end{minipage}\hfill%
+    ~
+    \begin{minipage}[t]{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/bow.pdf}
+        \caption{Visualization of image vectorization using the visual bag of words method. Images sharing common features result in closely aligned vectors. Each feature in the vocabulary represents a distinct vector dimension.}
+        \label{fig:bow-vector}
+    \end{minipage}
+\end{figure}
 
 \subsection{RANSAC}
 \label{sec:ransac}
 
+RANdom SAmple Consensus (RANSAC) is an iterative method used to robustly fit a mathematical model to a dataset with a large number of outliers, with the outliers having no influence over the estimated model. This is particularly useful in visual SLAM as observations are extremely noisy, often containing far more outliers than inliers. Pseudocode for the algorithm is presented in \autoref{alg:ransac}.
+
+\begin{algorithm}[H]
+    \caption{RANSAC Algorithm}
+    \label{alg:ransac}
+    \begin{algorithmic}[1]
+        \State \textbf{Input:} dataPoints, model to explain data, number of iterations $k$, threshold $\tau$, minimum number of data points needed to fit model $n$
+        \State \textbf{Output:} Best fitting model
+
+        \State bestmodel $\leftarrow$ null
+        \State bestInliers $\leftarrow$ \{\}
+
+        \For{$i = 1$ to $k$}
+        \State samples $\leftarrow$ $n$ randomly selected data points
+        \State model $\leftarrow$ model fit to samples
+        \State inliers $\leftarrow$ \{\}
+
+        \For{each point in dataPoints}
+        \If{point fits model with error $<$ $\tau$}
+        \State Add point to inliers
+        \EndIf
+        \EndFor
+
+        \If{number of inliers $>$ size of bestInliers}
+        \State bestInliers $\leftarrow$ inliers
+        \State bestModel $\leftarrow$ model
+        \EndIf
+        \EndFor
+
+        \State \Return bestModel
+    \end{algorithmic}
+\end{algorithm}
+
 \section{Requirements Analysis}
 \label{sec:requirements-analysis}
+After further background reading on the subject and a review of other multi-agent SLAM systems, I broke my project down into the requirements shown in \autoref{fig:risk-analysis}. Features vital to achieving my core deliverables are given high importance, while extensions are given low importance. Additionally, features are given a risk level depending on how research-heavy they were, which helped me when planning and allocating time.
+
+
+\begin{figure}[h]
+    \centering
+    \captionsetup{justification=raggedright,singlelinecheck=false,margin={0in,1in}}
+    \adjustbox{valign=t, width=4in}{
+        \def\arraystretch{1.2}
+
+        \newcommand{\highentry}[0]{
+            \colorbox{Red!40!White}{\texttt{ High \vphantom{|g}}}
+        }
+        \newcommand{\mediumentry}[0]{
+            \colorbox{Yellow!50!White}{\texttt{Medium\vphantom{|g}}}
+        }
+        \newcommand{\lowentry}[0]{
+            \colorbox{Green!40!White}{\texttt{\: Low \:\vphantom{|g}}}
+        }
+
+
+        \begin{tabular}{ lcc }
+            \hline
+            \textbf{Feature}                    & \textbf{Importance} & \textbf{Risk} \\
+            \hline
+            Simulation environment              & \highentry          & \lowentry     \\
+            ORB-SLAM3 integration               & \highentry          & \mediumentry  \\
+            Map serialization/deserialization   & \highentry          & \mediumentry  \\
+            Decentralized system state manager  & \highentry          & \lowentry     \\
+            Map merge finder and merger         & \highentry          & \lowentry     \\
+            Handle losing communication         & \highentry          & \lowentry     \\
+            Management interface                & \mediumentry        & \lowentry     \\
+            Distributed pose graph optimization & \lowentry           & \highentry    \\
+            Map compression                     & \lowentry           & \mediumentry  \\
+            Visualization tools                 & \lowentry           & \lowentry     \\
+            Additional sensors                  & \lowentry           & \highentry    \\
+            Intelligent map sharing             & \lowentry           & \mediumentry  \\
+            Motion controller$^1$               & \lowentry           & \mediumentry  \\
+            Real-world deployment$^1$           & \lowentry           & \mediumentry  \\
+            Augmented Reality visualization$^1$ & \lowentry           & \highentry    \\
+        \end{tabular}
+    }
+
+    \caption{Risk analysis.\captionbreak$^1$Requirements added after work had begun.}
+    \label{fig:risk-analysis}
+\end{figure}
 
 \subsection{Development Model}
 \label{sec:development-model}
+This project lends itself best to the Spiral Development Model \autocite{59}, as it consists of multiple well-defined features but requires frequent review and planning to decide how to push the project forward next. Developing my SLAM system was a large software engineering undertaking, involving the development of 5 ROS packages, an evaluation library, and even hardware. I knew that a rigid plan would quickly fall apart as roadblocks occurred, therefore, I chose the spiral model as it allowed me to adapt my plan as risks were identified and priorities were changed.
+
+After implementing each core feature into my SLAM system, I would evaluate its performance with my testing and evaluation infrastructure to identify any unexpected issues and identify potential risks. This would influence my plan for the next iteration around the spiral, as well as my long-term plan for the project.
+
+A good example of a pivot taken after re-evaluating my project was in late January, when the core features of my project were complete and I was planning the next stage of development. Discussions with my supervisor, as well as my own analysis of the project, revealed that the original extensions were no longer very relevant to my project, as they had either implicitly already been achieved while developing my core features or would not yield particularly interesting results. We instead decided to focus on deploying to real robots to demonstrate real-world usability and performance. This was a choice I am glad to have made, as I believe it greatly strengthens the credibility of my SLAM system.
+
+\subsection{Licensing}
+\label{sec:licensing}
+All my code is available as open-source software on GitHub. The core SLAM system and Multi-Agent EVO library are released under the GPL-3 license \autocite{gplv3} as it builds upon code released under that license. My Raspberry Pi Video Publisher is published under the MIT license \autocite{mit}.
+
 

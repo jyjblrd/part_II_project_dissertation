@@ -82,7 +82,9 @@ A naive approach to merging maps with an external agent is to constantly exchang
 
 Instead, we first identify if a map merge is even feasible by using visual words before attempting a full map merge. This eliminates superfluous map merge attempts that have no chance of succeeding because the agents' maps have no visual overlap.
 
-As the agents generate new keyframes, we use DBoW2 \autocite{GalvezTRO12} to calculate the \hyperref[sec:visual-bag-of-words]{visual bag of words} seen by that keyframe and send them to our peers over the \texttt{/new\_key\_frame\_bows} ROS topic. These visual words are significantly smaller than sending over the complete map (as shown in \autoref{fig:kf-vs-bow-msg-size}) and enable agents to detect if there is a significant amount of visual overlap between its local map and the external agent's map. This is computed by \autoref{alg:map-merge-finder}.
+As the agents generate new keyframes, we use DBoW2 \autocite{GalvezTRO12} to calculate the \hyperref[sec:visual-bag-of-words]{visual bag of words} seen by that keyframe and send them to our peers over the \texttt{/new\_key\_frame\_bows} ROS topic. These visual words are significantly smaller than sending over the complete map (as shown in \autoref{fig:kf-vs-bow-msg-size}) and enable agents to detect if there is a significant amount of visual overlap between its local map and the external agent's map.
+
+\autoref{alg:map-merge-finder} calculates if a merge is found by comparing the merge score of the external visual words to a dynamic baseline score, allowing the system to generalize to different environments. \autoref{alg:calculate-merge-score} the subprocedure used to calculate the merge score of a visual bag of words into the local map, and importantly exploits the spatial locality of keyframes to give a more robust score.
 
 This method gives a recall of almost 100\%, at the cost of potentially lower precision. This is a worthwhile tradeoff however, as it is essential to have very few false negatives so we can merge maps as soon as possible so the agents can begin collaborating and determine relative positioning.
 
@@ -93,21 +95,47 @@ This method gives a recall of almost 100\%, at the cost of potentially lower pre
     \label{fig:kf-vs-bow-msg-size}
 \end{figure}
 
-\begin{algorithm}
-    \caption{Map merge finder using visual words. TODO: improve}
+\begin{algorithm}[H]
+    \caption{Map merge finder using visual words.}
     \label{alg:map-merge-finder}
     \begin{algorithmic}[1]
-        \Require{$VisualWords_{ext}$: Set containing external keyframe's visual words}
-        \Ensure{$Success$: Boolean value signaling if a merge is possible based on visual words}
-        \State $(MergeScore_{ext},\ BestMatchKeyFrame) \gets \text{CalculateMergeScore}(VisualWords_{ext})$
-        \State $(MergeScore_{baseline},\ \underbar{\ \ }\ ) \gets \text{CalculateMergeScore}(BestMatchKeyFrame \text{'s visual words})$
-        \State $Success \gets MergeScore_{ext} \geq MergeScore_{baseline}$
+        \Require{VisualWords$_{ext}$: Set containing external keyframe's visual words}
+        \Ensure{Success: Boolean value signaling if a merge is possible based on visual words}
+        \State (MergeScore$_{ext}$, BestMatchKeyFrame) $\gets$ CalculateMergeScore(VisualWords$_{ext}$)
+        \State (MergeScore$_{baseline}$, $\underbar{\ \ }$) $\gets$ CalculateMergeScore(BestMatchKeyFrame's visual words)
+        \State Success $\gets$ MergeScore$_{ext}$ $\geq$ 0.7 $\times$ MergeScore$_{baseline}$
+    \end{algorithmic}
+\end{algorithm}
+\vspace{-0.25in}
+\begin{algorithm}[H]
+    \caption{Calculate how well a bag of visual words merges with the local map.}
+    \label{alg:calculate-merge-score}
+    \begin{algorithmic}[1]
+        \Procedure{CalculateMergeScore}{VisualWords}
+        \State PotentialMatches $\gets$ query Visual Word Set data structure for similar keyframes
+        \State BestMatchKeyFrame $\gets$ null
+        \State BestMergeScore $\gets$ 0
+        \For{each KeyFrame$_0$ in PotentialMatches}
+        \State MergeScore $\gets$ KeyFrame$_0$'s similarity to VisualWords
+        \State Covisible $\gets$ 5 keyframes with highest covisibility with KeyFrame$_0$
+        \For{each KeyFrame$_{cov}$ in Covisible} \Comment{\textit{Exploit spatial locality}}
+        \State MergeScore += KeyFrame$_{cov}$'s similarity to VisualWords
+        \EndFor
+        \If{MergeScore $\geq$ BestMergeScore}
+        \State BestMergeScore $\gets$ MergeScore
+        \State BestMatchKeyFrame $\gets$ KeyFrame$_0$
+        \EndIf
+        \EndFor
+        \Return (BestMergeScore, BestMatchKeyFrame)
+        \EndProcedure
     \end{algorithmic}
 \end{algorithm}
 
 \subsubsection{External Map Merger}
 \label{sec:external-map-merger}
 Performing full map merges is perhaps the most important component of the decentralized SLAM system, as a bad map merge will make it impossible for agents to collaborate. Additionally, it is one of the most computationally intensive parts of this system, therefore, it has gone through numerous iterations to optimize performance and reduce map merge errors.
+
+TODO: add before/after picture of map merge
 
 The external map merger leverages components of the ORB-SLAM3 loop closure module, as it is a fundamentally similar problem. The final version of the map merger works as follows:
 
@@ -120,9 +148,9 @@ The external map merger leverages components of the ORB-SLAM3 loop closure modul
           If we determine the merge to not be possible, we delete the external map from our map database and exit this process.
     \item \textbf{Apply translation $T_{loc \rightarrow ext}$ to our local map.}
     \item \textbf{Move a subset of the external map's keyframes and map points into our local map} \\
-          Given the external keyframe $k_0$ whose visual words triggered this map merge attempt, we extract a \textit{local window} $K$ of keyframes connected to $k_0$ in the co-visibility graph and move them to our local map. Moving only a small number of keyframes at first allows the merge and bundle adjustment process to be completed faster, which is important as they block local mapping from being performed.
+          Given the external keyframe $k_0$ whose visual words triggered this map merge attempt, we extract a \textit{local window} $K$ of keyframes connected to $k_0$ in the co-visibility graph and move them to our local map. Moving only a small number of keyframes at first allows the merge and pose graph optimization process to be completed faster, which is important as they block local mapping from being performed.
     \item \textbf{Merge local and external map points, connecting the maps}
-    \item \textbf{Run bundle adjustment to optimize map point and keyframe positions.}
+    \item \textbf{Run pose graph optimization to optimize map point and keyframe positions.}
     \item \textbf{Repeat steps 5-7 with the entirety of the external map.}
     \item \textbf{Broadcast successful merge message.} \\
           If the full map merge is ultimately successful, we broadcast a \texttt{/successfully\_merged} message to tell the external agent that we have successfully merged their map. The external agent will then move to the \texttt{merged} state and both agents will begin sharing keyframes with each other.
@@ -173,7 +201,7 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
     \begin{subfigure}[t]{0.333\textwidth}
         \centering
         \includegraphics[height=1.9in]{figures/external_key_frame_insertion_5.pdf}
-        \caption{\textbf{Step 6}: Local bundle adjustment around $k_{ext}$ to refine the map using the new information. Original keyframe and map point locations shown in purple.}
+        \caption{\textbf{Step 6}: Local pose graph optimization around $k_{ext}$ to refine the map using the new information. Original keyframe and map point locations shown in purple.}
     \end{subfigure}%
 
     \caption{Visual overview of inserting external keyframes and map points into the local map. External keyframe (a) and initial local map (b) are combined to create our final local map (e).}
@@ -190,8 +218,8 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
           $M_{ext}$ contains references to keyframes that observe it which have already been sent or were generated by another agent. We search our local map for keyframes that match these references, reconnecting them. More details of the deserialization process are given in \autoref{sec:map-serialization-and-deserialization}.
     \item \textbf{Merge $M_{ext}$ with map points in the local map}. \\
           $M_{ext}$ will already be correctly linked to observing keyframes in the local map, however, due to communication latency some map points in $M_{ext}$ may be duplicates of existing map points in the local map. Therefore, we exploit spatial locality to combine duplicate map points that describe the same physical feature. A key observation was that this step is essential to ensuring the local and external keyframes stay well connected, ensuring the local and external maps do not diverge.
-    \item \textbf{Perform a local bundle adjustment around $k_{ext}$}. \\
-          Since we have merged map points in the previous step, we need to perform bundle adjustment to tweak the keyframe and map point locations to minimize reprojection error. This helps create a more accurate map, minimizing tracking error. We also only need to perform this bundle adjustment locally, greatly reducing the computational cost.
+    \item \textbf{Perform a local pose graph optimization around $k_{ext}$}. \\
+          Since we have merged map points in the previous step, we need to perform pose graph optimization to tweak the keyframe and map point locations to minimize reprojection error. This helps create a more accurate map, minimizing tracking error. We also only need to perform this pose graph optimization locally, greatly reducing the computational cost.
 \end{enumerate}
 
 
