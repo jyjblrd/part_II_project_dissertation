@@ -19,7 +19,19 @@
 \usepackage{dirtree}
 \usepackage{bold-extra}
 \usepackage{setspace}
+\usepackage{framed}
 
+\renewenvironment{leftbar}[1][\hsize]
+{%
+    \def\FrameCommand
+    {%
+        {\color{black}\vrule width 3pt}%
+        \hspace{0pt}%must no space.
+        \fboxsep=\FrameSep\colorbox{white}%
+    }%
+    \MakeFramed{\hsize#1\advance\hsize-\width\FrameRestore}%
+}
+{\endMakeFramed}
 
 % code highlighting
 \usepackage{minted}
@@ -41,7 +53,11 @@
 % title spacing
 \titleformat{\chapter}[display]
 {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
-\titlespacing*{\chapter}{0pt}{0pt}{10pt}
+
+\titlespacing\chapter{0pt}{-20pt plus 4pt minus 2pt}{-4pt plus 2pt minus 2pt}
+\titlespacing\section{0pt}{6pt plus 4pt minus 2pt}{-4pt plus 2pt minus 2pt}
+\titlespacing\subsection{0pt}{6pt plus 4pt minus 2pt}{-4pt plus 2pt minus 2pt}
+\titlespacing\subsubsection{0pt}{6pt plus 4pt minus 2pt}{-4pt plus 2pt minus 2pt}
 
 % don't let large figures hijack entire pages
 \renewcommand\topfraction{.9}

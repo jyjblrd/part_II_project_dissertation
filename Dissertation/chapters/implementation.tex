@@ -19,7 +19,7 @@
 
 \begin{figure}[h]
     \centering
-    \includegraphics[trim=5cm 5cm 5cm 32cm, scale=0.2]{figures/agent_diagram.pdf}
+    \includegraphics[trim=5cm 5cm 5cm 30cm, scale=0.2]{figures/agent_diagram.pdf}
     \caption{Agent diagram. Green arrows represent messages sent over ROS topics, while black arrows represent internal communications within a node.}
     \label{fig:agent-diagram}
 \end{figure}
@@ -135,9 +135,63 @@ This method gives a recall of almost 100\%, at the cost of potentially lower pre
 \label{sec:external-map-merger}
 Performing full map merges is perhaps the most important component of the decentralized SLAM system, as a bad map merge will make it impossible for agents to collaborate. Additionally, it is one of the most computationally intensive parts of this system, therefore, it has gone through numerous iterations to optimize performance and reduce map merge errors.
 
-\comment{TODO: add before/after picture of map merge}
 
-The external map merger leverages modifed components of the ORB-SLAM3 loop closure module, as it is a fundamentally similar problem. The final version of the map merger works as follows:
+\begin{figure}[h]
+    \centering
+    \newcommand{\setheight}{1.25in}
+    % \begin{subfigure}[t]{0.25\linewidth}
+    %     \centering
+    %     \raisebox{\dimexpr\setheight-.5\height}{%
+    %         \includegraphics[width=\linewidth]{figures/pre_merge_1_w_floorplan.png}
+    %     }
+    %     \caption{Local map}
+    % \end{subfigure}%
+    % ~
+    % \begin{subfigure}[t]{0.35\linewidth}
+    %     \centering
+    %     \raisebox{\dimexpr\setheight-.5\height}{%
+    %         \includegraphics[width=\linewidth]{figures/pre_merge_2_w_floorplan.png}
+    %     }
+    %     \caption{External map}
+    % \end{subfigure}%
+    % ~
+    % \begin{subfigure}[t]{0.4\linewidth}
+    %     \centering
+    %     \raisebox{\dimexpr\setheight-.5\height}{%
+    %         \includegraphics[width=\linewidth]{figures/after_merge_w_floorplan.png}
+    %     }
+    %     \caption{Merged map}
+    % \end{subfigure}
+    \begin{subfigure}[t]{0.25\linewidth}
+        \centering
+        \raisebox{\dimexpr\setheight-.5\height}{%
+            \includegraphics[width=\linewidth]{figures/pre_merge_1.png}
+        }
+        \caption{Local map}
+    \end{subfigure}%
+    ~
+    \begin{subfigure}[t]{0.35\linewidth}
+        \centering
+        \raisebox{\dimexpr\setheight-.5\height}{%
+            \includegraphics[width=\linewidth]{figures/pre_merge_2.png}
+        }
+        \caption{External map}
+    \end{subfigure}%
+    ~
+    \begin{subfigure}[t]{0.4\linewidth}
+        \centering
+        \raisebox{\dimexpr\setheight-.5\height}{%
+            \includegraphics[width=\linewidth]{figures/after_merge.png}
+        }
+        \caption{Merged map}
+    \end{subfigure}%
+
+    \caption{Visual overview of the map merge process. We apply the translation $T_{loc \to ext}$ to the local map (a), and merge it with the external map (b), resulting in the merged map (c). The merged map contains information from both maps, creating our unified map. Note that the local map's scale also needs to be transformed, due to the arbitrary scale of monocular SLAM systems.}
+    \label{fig:map-merge}
+
+\end{figure}
+
+The external map merger leverages modified components of the ORB-SLAM3 loop closure module, as it is a fundamentally similar problem. The final version of the map merger works as follows:
 
 \begin{enumerate}
     \item \textbf{Request external agent's full map.} \\
@@ -197,7 +251,7 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
     \item \textbf{Merge $M_{ext}$ with map points in the local map}. \\
           $M_{ext}$ will already be correctly linked to observing keyframes in the local map from step 4., however, due to communication latency some map points in $M_{ext}$ may be duplicates of existing map points in the local map. Therefore, we exploit spatial locality to combine duplicate map points that describe the same physical feature. A key observation from testing was that this step is essential to ensuring the local and external keyframes stay well connected, ensuring the local and external maps do not diverge.
     \item \textbf{Perform a local pose graph optimization around $k_{ext}$}. \\
-          Since we have merged map points in the previous step, we need to a local perform pose graph optimization to tweak the keyframe and map point locations to minimize reprojection error. This helps create a more accurate map, minimizing trajectory error. Since we only perform this optimization with spatially local keyframes and map points, the computational overhead is relatively low.
+          Since we have merged map points in the previous step, we need to a local perform pose graph optimization to tweak the keyframe and map point locations to minimize reprojection errors. This helps create a more accurate map, minimizing trajectory error. Since we only perform this optimization with spatially local keyframes and map points, the computational overhead is relatively low.
 \end{enumerate}
 
 
@@ -245,6 +299,15 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
 As mentioned in the \nameref{sec:external-key-frame-inserter} section, it is essential that the local and external maps stay well connected, sharing the majority of their map points. In other words, we must ensure that the external map data is integrated throughout the whole SLAM pipeline.
 
 The \texttt{Tracking} and \texttt{Mapping} modules, which are responsible for localizing the robot and generating new keyframes, only interact with the \texttt{Map Database}, as seen in the previously shown architectural diagram in \autoref{fig:agent-diagram}. Our external keyframe inserter does all the work of properly reconnecting external map points and merging duplicate map points, leaving the \texttt{Map Database} data structure looking as if all the map points and keyframes were generated locally. This abstracts the \texttt{Tracking} and \texttt{Mapping} modules away from the distributed aspects of the system, ensuring that they fully utilize the external map points when localizing the agent and generating new keyframes.
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/map_integration.png}
+
+    \caption{Section of the keyframes generated when running the EuRoC Machine Hall dataset. The local (green) and external (red) keyframes are well connected by covisibility links (blue), demonstrating that they are tracking the same map points.}
+    \label{fig:simulation-environment}
+\end{figure}
 
 \subsection{Generalizing to $N \geq 3$ Agent Systems}
 \label{sec:generalizing-to-n-geq-3-agent-systems}
