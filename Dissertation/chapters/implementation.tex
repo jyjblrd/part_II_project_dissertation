@@ -14,6 +14,12 @@
 
 \label{sec:3}
 
+My project presents an approach to distributed visual SLAM which yields lower errors than comparable state-of-the-art systems. This improvement is a result of my system's extended capabilities, such as the ability for agents to recover from prolonged losses of localization, a novel approach to the distributed pose graph optimization problem, and algorithms that improve long-term map association \& reuse. The details of my implementation are covered in the following chapter, with its performance discussed in the \nameref{sec:4} chapter.
+
+% In addition, I introduce \textit{Multi-Agent EVO} which, to my knowledge, is the first open-source multi-agent focused SLAM evaluation library. TODO, include or not?
+
+My system and its supporting infrastructure are made open source, with compiled docker containers also provided. This allows for the easy deployment and evaluation of my system, and is in line with the suggestions made by Sharafutdinov et al. to prevent my system from contributing to the reproducibility crisis seen across the field of SLAM research \autocite{DBLP:journals/corr/abs-2108-01654}.
+
 \section{Agent Architectural Overview}
 \label{sec:architectural-overview}
 
@@ -24,7 +30,7 @@
     \label{fig:agent-diagram}
 \end{figure}
 
-\autoref{fig:agent-diagram} gives an architectural overview of an agent, showing how the \texttt{Abstract Robot}, \texttt{SLAM System} and \texttt{Motion Controller} ROS nodes interconnect.
+\autoref{fig:agent-diagram} gives an architectural overview of an agent in my system, showing how the \texttt{Abstract Robot}, \texttt{SLAM System} and \texttt{Motion Controller} ROS nodes interconnect.
 
 From a high level, we have an \texttt{Abstract Robot} node that provides an interface to the robot's hardware. This sends camera images to the \texttt{SLAM System} node, which builds a map of the world in collaboration with its peers. The \texttt{Motion Controller} node receives agent pose information from both the local \texttt{SLAM System} and the external peers to perform tasks such as collision avoidance by sending velocity commands back to the \texttt{Abstract Robot} node, closing the control loop.
 
@@ -360,7 +366,7 @@ To remedy this problem, we continuously refine our map alignment using \nameref{
     \item \textbf{Request map point locations from the lead agent}. \\
           This is defined as the set TaggedMP$_{ext}$ where TaggedMP${_{ext}}_i = (\text{uuid}, (x, y, z))$
     \item \textbf{Extract local map point locations}. \\
-          This is defined as the set $TaggedMP_{local}$ where TaggedMP${_{local}}_i = (\text{uuid}, (x, y, z))$
+          This is defined as the set TaggedMP$_{local}$ where TaggedMP${_{local}}_i = (\text{uuid}, (x, y, z))$
     \item \textbf{Use the Kabsch-Umeyama and RANSAC algorithms to find the transform $T_{local \to ext}$ which best aligns TaggedMP$_{local}$ to TaggedMP$_{ext}$.} \\
           The Kabsch-Umeyama algorithm finds the SIM(3) transformation $T$ from TaggedMP$_{ext}$ to TaggedMP$_{local}$, minimizing the RMSE. However, our input data may contain a large number of outliers so we use RANSAC to find a good fit while ignoring outliers.
 
@@ -380,9 +386,7 @@ Losing connection is very similar, where keyframe sharing is stopped until the c
 \label{sec:visualization-publisher}
 All 3D visualizations are created by publishing ROS markers, a standardized ROS message type that represents some object in 3D space such as lines, points, or meshes. These ROS markers can then be displayed by a variety of third-party visualization tools such as RViz \autocite{10.1007/s11235-015-0034-5} and Foxglove Studio \autocite{foxgloveStudio}.
 
-Using ROS markers allows me to leverage these mature visualization tools instead of creating one from scratch, and also allows visualizations to be easily saved and replayed for later analysis.
-
-TODO: add cool visualization
+Using ROS markers allows me to leverage these mature visualization tools instead of creating one from scratch, and also allows visualizations to be easily saved and replayed for later analysis. Demonstrations of these 3D visualizations can be found in the supplementary video\footnote[1]{\url{https://cam-diss.s3.amazonaws.com/video.mp4}}
 
 \section{Motion Controller}
 \label{sec:motion-controller}
@@ -596,6 +600,8 @@ The ground truth for my real-world experiments are provided by the Prorok Lab's 
 \label{sec:raspberry-pi-video-publisher}
 This dissertation also presents the Raspberry Pi Video Publisher, an independent piece of infrastructure which I have developed both the hardware and software for. This platform publishes real-time camera data to a ROS topic and can be tracked by the lab's motion capture system. The two primary use cases I have used this platform for are (1) dataset generation and (2) real-time AR visualization of 3D data (\autoref{sec:augmented-reality-visualization}).
 
+ROS does not support streaming videos across a network, instead requiring frames to be sent as individual compressed images. This results in significant computational overhead, with a naive ROS video publisher implementation only being able to stream at 10 frames per second on the Raspberry Pi. To enable a 30 frame per second video stream, my implementation uses three threads. The first thread captures images from the camera, the second encodes them as a JPEG image, and the third publishes the images to a ROS topic.
+
 As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. This is particularly useful, as it is designed as a plug-and-play system that starts streaming video data as soon as it is turned on.
 
 The hardware for this platform consists of a Raspberry Pi 4b, Raspberry Pi Camera v2, 3D printed frame, and motion capture markers. The 3D-printed frame securely mounts the components together, allowing the system to be carried around or mounted to a tripod.
@@ -630,18 +636,15 @@ To my knowledge, this system is the first of its kind to be used in such a proje
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\linewidth]{figures/ar_overlay_map_points.png}
+    \includegraphics[width=0.8\linewidth]{figures/ar_overlay_map_points.png}
 
-    \caption{Features tracked by the RoboMaster overlayed over an ``external perspective" handheld video from my Raspberry Pi Video Publisher. Note that the features are not being generated by the Raspberry Pi video itself, but instead the features generated by the RoboMaster are reprojected onto the Raspberry Pi video as it moves through space. This is made more obvious in the video demonstration of this feature: TODO add video. \captionbreak This visualization makes it clear that my SLAM system is tracking the corners of boxes, letters on the Prorok Lab banner, and the floor vents.}
+    \caption{Features tracked by the RoboMaster overlayed over an ``external perspective" handheld video from my Raspberry Pi Video Publisher. Note that the features are not being generated by the Raspberry Pi video itself, but instead, the features generated by the RoboMaster are reprojected onto the Raspberry Pi video as it moves through space. This is made more obvious in the video demonstration of this feature: TODO add video. \captionbreak This visualization makes it clear that my SLAM system is tracking the corners of boxes, letters on the Prorok Lab banner, and the floor vents.}
     \label{fig:ar-overlay-map-points}
 \end{figure}
 
 \newpage
 \section{Repository Overview}
 \label{sec:repository-overview}
-\comment{TODO: complete}
-
-This project consists of three separate repositories:
 
 \newcommand{\locindent}{3.3em}
 \newcommand{\locsmallindent}{2em}
@@ -664,62 +667,95 @@ This project consists of three separate repositories:
     \makebox[#1][r]{}
 }
 
-The \texttt{part\_ii\_project} repository contains the core SLAM system and all the infrastructure needed to run it. This includes five ROS packages: \texttt{orb\_slam3\_ros}, \texttt{motion\_controller}, \texttt{webots\_sim}, \texttt{controller}, and \texttt{interfaces}, which all follow the standard ROS package structure. \texttt{orb\_slam3\_ros} and \texttt{interfaces} are written in C++ and built using CMake, while the other packages are written in Python.
+My dissertation consists of five ROS packages, a Python library, 3D designs, and dozens more miscellaneous files, amounting to \textbf{30,000\texttt{+} lines of code} across \textbf{108 files} and \textbf{three repositories}. While lines of code and number of files are a notoriously poor measurement of complexity, I still hope to illustrate the scale of this software engineering project. The following section gives a brief overview of my codebase's structure.
 
-\begin{minipage}{\linewidth}
-    \dirtree{%
-        .1 part\_ii\_project/.
-        .2 src/\DTcomment{\locdiff{1,000}{1,000}{\locindent}}.
-        .3 orb\_slam3\_ros/\DTcomment{Core SLAM package\locdiff{1,000}{1,000}{\locindent}}.
-        .5 configs/\DTcomment{Config for different camera systems\locdoublespace{\locindent}}.
-        .5 src/\DTcomment{Source code for my SLAM system\locadd{1,351}{\locindent}}.
-        .5 orb\_slam3/\DTcomment{Heavily modified ORB-SLAM3 codebase\locdiff{1,000}{1,000}{\locindent}}.
-        .4 ....
-        .3 motion\_controller/\DTcomment{Motion controller package\locdoublespace{\locindent}}.
-        .4 motion\_controller/\DTcomment{\locadd{615}{\locindent}}.
-        .5 collision\_avoidance.py\DTcomment{\locadd{142}{\locindent}}.
-        .5 follow\_the\_leader.py\DTcomment{\locadd{78}{\locindent}}.
-        .5 helpers/\DTcomment{\locadd{325}{\locindent}}.
-        .4 ....
-        .3 webots\_sim/\DTcomment{\locadd{276}{\locindent}}.
-        .4 launch/robot\_launch.py\DTcomment{\locadd{42}{\locindent}}.
-        .4 webots\_sim/robot\_driver.py\DTcomment{\locadd{58}{\locindent}}.
-        .4 worlds/\DTcomment{Simulation environments\locdoublespace{\locindent}}.
-        .4 ....
-        .3 controller/\DTcomment{Centeral management interface package\locadd{442}{\locindent}}.
-        .3 evaluation/\DTcomment{Jupyter Notebooks for evaluation\locadd{10}{\locindent}}.
-        .3 interfaces/\DTcomment{Custom ROS message type definitions\locadd{10}{\locindent}}.
-        .3 tools/\DTcomment{Misc. scripts\locadd{10}{\locindent}}.
-        .2 .github/workflows/config.yml\DTcomment{CI/CD configuration\locadd{73}{\locindent}}.
-        .2 Dockerfile\DTcomment{Main dockerfile for the project\locadd{20}{\locindent}}.
-        .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson\locadd{30}{\locindent}}.
-        .2 ....
-    }
-\end{minipage}
+The \texttt{distributed\_visual\_slam} repository contains the core SLAM system and all the infrastructure needed to run it. This includes five ROS packages: \texttt{slam\_system}, \texttt{motion\_controller}, \texttt{webots\_sim}, \texttt{central\_management\_interface}, and \texttt{interfaces}, which all follow the standard ROS package structure. \texttt{slam\_system} and \texttt{interfaces} are written in C++ and built using CMake, while the remaining packages are Python-based. Details of the repository's structure and line counts can be found in \autoref{fig:repo-overview-main}.
 
-The \texttt{rpi\_ros2\_camera\_publisher} repository contains the code and CI/CD configuration for the Raspberry Pi Video Publisher.
+\begin{figure}[h]
+    \centering
+    \captionsetup{skip=0.5em}
+    \begin{minipage}[t]{\linewidth}
+        \footnotesize
+        \setlength{\DTbaselineskip}{12pt}
+        \dirtree{%
+            .1 distributed\_visual\_slam/\DTcomment{\locdiff{5,953}{1,598}{\locindent}}.
+            .2 src/.
+            .3 slam\_system/\DTcomment{Core SLAM package (\cref{sec:slam-system})\locdiff{3,303}{1,598}{\locindent}}.
+            .5 include/\DTcomment{Decentralized system manager headers\locaddnospace{242}{\locindent}}.
+            .5 src/\DTcomment{Decentralized system manager (\cref{sec:decentralized-system-manager})\locaddnospace{1,283}{\locindent}}.
+            .5 orb\_slam3/\DTcomment{Modified ORB-SLAM3 codebase\locdiff{1,728}{1,598}{\locindent}}.
+            .5 configs/\DTcomment{Config for different camera systems\locsinglespace{\locindent}}.
+            .5 ....
+            .4 ....
+            .3 motion\_controller/\DTcomment{Motion controller package (\cref{sec:motion-controller})\locaddnospace{600}{\locindent}}.
+            .4 motion\_controller/.
+            .5 collision\_avoidance.py\DTcomment{(\cref{sec:multi-agent-collision-avoidance-implementation})\locaddnospace{142}{\locindent}}.
+            .5 follow\_the\_leader.py\DTcomment{(\cref{sec:follow-the-leader})\locaddnospace{78}{\locindent}}.
+            .5 helpers/\DTcomment{\locaddnospace{310}{\locindent}}.
+            .4 ....
+            .3 webots\_sim/\DTcomment{Simulation package (\cref{sec:simulation-environment})\locaddnospace{288}{\locindent}}.
+            .4 webots\_sim/robot\_driver.py\DTcomment{\locaddnospace{58}{\locindent}}.
+            .4 launch/robot\_launch.py\DTcomment{\locaddnospace{42}{\locindent}}.
+            .4 worlds/.
+            .4 ....
+            .3 central\_management\_interface/\DTcomment{Centeral management interface package (\cref{sec:central-management-interface})\locaddnospace{442}{\locindent}}.
+            .3 evaluation/\DTcomment{Jupyter Notebooks for evaluation\locaddnospace{1033}{\locindent}}.
+            .3 interfaces/\DTcomment{Custom ROS message type definitions\locaddnospace{109}{\locindent}}.
+            .3 tools/\DTcomment{Misc. scripts\locaddnospace{42}{\locindent}}.
+            .2 .github/workflows/config.yml\DTcomment{CI/CD configuration (\cref{sec:cicd})\locaddnospace{73}{\locindent}}.
+            .2 Dockerfile\DTcomment{Main dockerfile for the project\locaddnospace{20}{\locindent}}.
+            .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson\locaddnospace{30}{\locindent}}.
+            .2 ....
+        }
+    \end{minipage}
+    \caption{Repository overview for my distributed visual SLAM system. Line count does not include non-code files (e.g. camera configurations, simulation worlds, et cetera.) \captionbreak Note that a \texttt{git diff} is given for the \texttt{orb\_slam3} folder, as it is a fork of an existing single-agent SLAM system \autocite{ORBSLAM3_TRO}. The \texttt{git diff} does not include reformatting or mass-deletions of unused files.}
+    \label{fig:repo-overview-main}
+\end{figure}
 
-\begin{minipage}{\linewidth}
-    \dirtree{%
-        .1 rpi\_ros2\_camera\_publisher/\DTcomment{\locaddnospace{190}{\locsmallindent}}.
-        .2 src/.
-        .3 send\_images.py\DTcomment{\locaddnospace{132}{\locsmallindent}}.
-        .2 .github/workflows/config.yml\DTcomment{CI/CD configuration\locaddnospace{36}{\locsmallindent}}.
-        .2 Dockerfile\DTcomment{Main dockerfile for the project\locaddnospace{10}{\locsmallindent}}.
-        .2 docker-rpi-cam.service\DTcomment{Systemctl service file\locaddnospace{11}{\locsmallindent}}.
-        .2 ....
-    }
-\end{minipage}
+The \texttt{rpi\_ros2\_camera\_publisher} repository holds the code, 3D files, and CI/CD configuration for the Raspberry Pi Camera Publisher system. The provided Systemctl service file configures the Raspberry Pi to pull and run the latest docker image on startup. The repository structure is illustrated by \autoref{fig:repo-overview-rpi-video}
 
-The \texttt{multi\_agent\_evo} repository is a fork of the EVO library and is used to evaluate multi-agent SLAM systems. The changes made to EVO are shown below.
+\begin{figure}[h]
+    \centering
+    \captionsetup{justification=raggedright,singlelinecheck=false, skip=0.5em}
+    \begin{minipage}[t]{0.925\linewidth}
+        \footnotesize
+        \setlength{\DTbaselineskip}{12pt}
+        \dirtree{%
+            .1 rpi\_ros2\_camera\_publisher/\DTcomment{(\cref{sec:raspberry-pi-video-publisher})\locaddnospace{190}{\locsmallindent}}.
+            .2 src/.
+            .3 send\_images.py\DTcomment{\locaddnospace{132}{\locsmallindent}}.
+            .2 .github/workflows/config.yml\DTcomment{CI/CD configuration\locaddnospace{36}{\locsmallindent}}.
+            .2 3D\_files/.
+            .2 Dockerfile\DTcomment{Main dockerfile for the project\locaddnospace{10}{\locsmallindent}}.
+            .2 docker-rpi-cam.service\DTcomment{Systemctl service file\locaddnospace{11}{\locsmallindent}}.
+            .2 ....
+        }
+    \end{minipage}
+    \caption{Repository overview for the Raspberry Pi Camera Publisher system.}
+    \label{fig:repo-overview-rpi-video}
+\end{figure}
 
-\begin{minipage}{\linewidth}
-    \dirtree{%
-        .1 multi\_agent\_evo/\DTcomment{\locdiff{317}{21}{\locsmallindent}}.
-        .2 evo/.
-        .3 core/\DTcomment{\locdiff{126}{5}{\locsmallindent}}.
-        .3 tools/\DTcomment{\locdiff{189}{16}{\locsmallindent}}.
-        .2 ....
-    }
-\end{minipage}
+The \texttt{multi\_agent\_evo} repository, a modified version of the EVO library, supports the evaluation of multi-agent SLAM systems. The changes made to EVO are shown in \autoref{fig:repo-overview-multi-agent-evo}.
+
+\begin{figure}[h]
+    \centering
+    \captionsetup{skip=0.5em}
+    \begin{minipage}[t]{0.925\linewidth}
+        \footnotesize
+        \setlength{\DTbaselineskip}{12pt}
+        \dirtree{%
+            .1 multi\_agent\_evo/\DTcomment{(\cref{sec:multi-agent-evo})\locdiff{399}{54}{\locsmallindent}}.
+            .2 evo/.
+            .3 core/\DTcomment{\locdiff{125}{5}{\locsmallindent}}.
+            .4 trajectory.py\DTcomment{Class for operating on trajectories\locdiff{115}{4}{\locsmallindent}}.
+            .4 ....
+            .3 tools/\DTcomment{\locdiff{272}{49}{\locsmallindent}}.
+            .4 coordinate\_frame\_decoder.py\DTcomment{Parse coordinate frame data\locadd{202}{\locsmallindent}}.
+            .4 ....
+            .2 ....
+        }
+    \end{minipage}
+    \caption{Repository overview for the Multi-Agent EVO evaluation library. \captionbreak Note that a \texttt{git diff} is given for the repository, as it is a fork of the single agent evaluation library EVO \autocite{grupp2017evo}.}
+    \label{fig:repo-overview-multi-agent-evo}
+\end{figure}
 

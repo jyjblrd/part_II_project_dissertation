@@ -29,19 +29,19 @@ It is easy to see the broad-reaching use cases of such a system. Agents will be 
 In this project, I: \noparskip
 {
     \begin{enumerate}
-        \item \textbf{Design and implement the first distributed monocular visual SLAM system available.} \comment{how do I ensure it really is the first?} It is capable of localization, relative pose estimation, and collaborative mapping, all while being tolerant to degraded network conditions and not reliant on any single leader agent. % TODO: talk about my "novel" DPGO approach?
+        \item Design and implement a novel distributed monocular visual SLAM system, capable of localization, relative pose estimation, and collaborative mapping, all while being tolerant to degraded network conditions and not reliant on any single leader agent.
         \item Evaluate the performance of my system on standardized datasets, \textbf{demonstrating its superior performance over comparable state-of-the-art systems}.
         \item Create a simulation environment for testing and evaluating my system locally.
-        \item Deploy my system on physical robots, \textbf{demonstrating the practical use cases of this system and benchmarking real-world performance.} Additionally, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, with my distributed SLAM system included as one of the experiments analyzed in the paper.
+        \item Deploy my system on physical robots, \textbf{demonstrating the practical use cases of this system and benchmarking real-world performance.}
+        \item \textbf{Contribute as a co-author to the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, where my distributed SLAM system was used to evaluate the robotics platform.
+        \item Additionally, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, with my distributed SLAM system included as one of the experiments analyzed in the paper.
         \item Develop \textit{Multi-Agent EVO} – the first open-source evaluation library for multi-agent SLAM systems.
         \item Develop the \textit{Raspberry Pi Video Publisher} – a performant platform for SLAM data collection or augmented reality visualizations – and set up a continuous integration and deployment pipeline to automatically push the latest build to the hardware.
     \end{enumerate}
 }
 
 \begin{leftbar}
-    \textbf{A short video demonstration of my project is provided at the following URL:} \url{https://cam-diss.s3.amazonaws.com/video.mp4} \comment{TODO: fix video index}
-
-    Due to the highly visual and 3D nature of my project, \textbf{I strongly recommend viewing the video}. It will provide an intuition of my system, making the following chapters easier to visualize and understand. Additionally, it is referenced throughout the dissertation.
+    \textbf{A short video demonstration of my project is provided at the following URL:} \url{https://cam-diss.s3.amazonaws.com/video.mp4} \comment{TODO: fix video index} \captionbreak Due to the highly visual and 3D nature of my project, \textbf{I strongly recommend viewing the video}. It will provide an intuition of my system, making the following chapters easier to visualize and understand. Additionally, it is referenced throughout the dissertation.
 \end{leftbar}
 
 \begin{figure}[h]
@@ -49,13 +49,13 @@ In this project, I: \noparskip
     \captionsetup{format=plain}
     \begin{subfigure}[t]{0.475\linewidth}
         \centering
-        \includegraphics[height=2.4in]{figures/euroc_mh_map.png}
+        \includegraphics[height=2.2in]{figures/euroc_mh_map.png}
         \caption{EuRoC Machine Hall 01-03}
     \end{subfigure}\hfill%
     ~
     \begin{subfigure}[t]{0.475\linewidth}
         \centering
-        \includegraphics[height=2.2in]{figures/tum_room_map.png}
+        \includegraphics[height=2.05in]{figures/tum_room_map.png}
         \caption{TUM-VI Rooms 1-3}
     \end{subfigure}
 
