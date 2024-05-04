@@ -21,6 +21,16 @@
 \usepackage{setspace}
 \usepackage{framed}
 \usepackage{cleveref}
+\usepackage{pdfpages}
+\usepackage{tocloft}
+
+% table of contents
+\setlength\cftparskip{0.1em}
+\setlength\cftbeforechapskip{0.7em}
+
+\let\subsectionautorefname\sectionautorefname
+\let\subsubsectionautorefname\sectionautorefname
+
 
 \renewenvironment{leftbar}[1][\hsize]
 {%

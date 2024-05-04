@@ -6,7 +6,11 @@
 
 \section{Future Work}
 \label{sec:future-work}
-\comment{TODO – any suggestions?}
+My dissertation has presented a system that outperforms comparable state-of-the-art systems, however I beleive that there is still a large untapped potential. Below are some future directions to further develop this work.
+
+\textbf{Deep neural network feature extraction and matching.} Traditional image feature descriptors such as ORB have long been used in visual odometry and visual SLAM, however there has been an exciting emergence of neural network based feature descriptors. SuperPoint \autocite{detone18superpoint} is an example of such a descriptor, providing impressively robust results. In addition, feature matchers such as LightGlue \autocite{lindenberger2023lightglue} are able to learn the geometric regularities of camera transformations through an end-to-end neural network training process to robustly match features across images, removing the need for the RANSAC \texttt{+} epipolar geometry model feature matching described in the \nameref{sec:visual-slam-visual-odometry} section. Leveraging such technologies in a multi-agent SLAM system may yield improved accuracy and robustness, especially in changing environments (e.g. day to night).
+
+\textbf{Bandwidth optimization.} Ad-hoc mesh networks are necessary for real-world deployment of distributed systems, however they present unique challenges. Due to a lack of central management, the network capacity is greatly limited, especially as the number of agents increases. It is worth exploring how the data transfer characteristcs of my system can be improved to better suit such a networking environment and improve its real-world deployability.
 
 \section{Lessons Learned}
 \label{sec:lessons-learned}

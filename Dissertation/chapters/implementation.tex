@@ -16,7 +16,7 @@
 
 My project presents an approach to distributed visual SLAM which yields lower errors than comparable state-of-the-art systems. This improvement is a result of my system's extended capabilities, such as the ability for agents to recover from prolonged losses of localization, a novel approach to the distributed pose graph optimization problem, and algorithms that improve long-term map association \& reuse. The details of my implementation are covered in the following chapter, with its performance discussed in the \nameref{sec:4} chapter.
 
-% In addition, I introduce \textit{Multi-Agent EVO} which, to my knowledge, is the first open-source multi-agent focused SLAM evaluation library. TODO, include or not?
+In addition, I introduce \textit{Multi-Agent EVO} which, to my knowledge, is the first open-source multi-agent focused SLAM evaluation library, along with numerous other visualization, simulation, and control infrastructure tools.
 
 My system and its supporting infrastructure are made open source, with compiled docker containers also provided. This allows for the easy deployment and evaluation of my system, and is in line with the suggestions made by Sharafutdinov et al. to prevent my system from contributing to the reproducibility crisis seen across the field of SLAM research \autocite{DBLP:journals/corr/abs-2108-01654}.
 
@@ -25,7 +25,7 @@ My system and its supporting infrastructure are made open source, with compiled 
 
 \begin{figure}[h]
     \centering
-    \includegraphics[trim=5cm 5cm 5cm 30cm, scale=0.2]{figures/agent_diagram.pdf}
+    \includegraphics[trim=5cm 5cm 5cm 29cm, scale=0.2]{figures/agent_diagram.pdf}
     \caption{Agent diagram. Green arrows represent messages sent over ROS topics, while black arrows represent internal communications within a node.}
     \label{fig:agent-diagram}
 \end{figure}
@@ -70,7 +70,7 @@ Decentralized SLAM systems have significantly more complexity than single-agent 
 
 For the sake of simplicity, the next few sections will explore the interactions between just two agents: a \textit{local} and \textit{external} agent. In the \nameref{sec:generalizing-to-n-geq-3-agent-systems} section, we will show how this easily generalizes to a system with an arbitrary number of agents.
 
-\subsubsection{State Manager}
+\subsection{State Manager}
 \label{sec:state-manager}
 
 \begin{figure}[h]
@@ -82,7 +82,7 @@ For the sake of simplicity, the next few sections will explore the interactions 
 
 Each agent's \texttt{Decentralized System Manager} maintains a state machine for every peer in the system, shown in \autoref{fig:state-machine}. All peers are initialized in the \texttt{unmerged} state, meaning that they are in a different coordinate frame and can not collaboratively build a map together. As the local agent starts to explore the same locations as its peers, the system recognizes the visual overlaps and merges their maps, bringing us to the \texttt{merged} state where the agents share the same coordinate frame and map, enabling relative positioning and collaborative map building.
 
-\subsubsection{External Map Merge Finder}
+\subsection{External Map Merge Finder}
 \label{sec:external-map-merge-finder}
 A naive approach to merging maps with an external agent is to constantly exchange our full maps, each time trying to identify if a map merge is possible. While simple, this approach does not scale well from both a networking and computational perspective, as maps are often \>1MB in size, and computing a full map merge is extremely computationally expensive.
 
@@ -137,7 +137,7 @@ This method gives a recall of almost 100\%, at the cost of potentially lower pre
     \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{External Map Merger}
+\subsection{External Map Merger}
 \label{sec:external-map-merger}
 Performing full map merges is perhaps the most important component of the decentralized SLAM system, as a bad map merge will make it impossible for agents to collaborate. Additionally, it is one of the most computationally intensive parts of this system, therefore, it has gone through numerous iterations to optimize performance and reduce map merge errors.
 
@@ -234,7 +234,7 @@ We manage these connections by giving every keyframe and map point a universal u
 This method of using UUIDs as references is used to rebuild all connections after deserialization, including the keyframe-to-keyframe connections that build the co-visibility graph and many others that I have not had the space to discuss in this dissertation.
 
 
-\subsubsection{External KeyFrame Inserter}
+\subsection{External KeyFrame Inserter}
 \label{sec:external-key-frame-inserter}
 Once the local and external agents have merged their maps and are in the same coordinate frame, they can begin sharing keyframes with each other.
 
@@ -300,7 +300,7 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
 \end{figure}
 
 
-\subsubsection{Local KeyFrame Inserter}
+\subsection{Local KeyFrame Inserter}
 \label{sec:local-key-frame-inserter}
 As mentioned in the \nameref{sec:external-key-frame-inserter} section, it is essential that the local and external maps stay well connected, sharing the majority of their map points. In other words, we must ensure that the external map data is integrated throughout the whole SLAM pipeline.
 
@@ -354,7 +354,7 @@ This whole process is perhaps best represented in visual form by the simple 3-ag
     \label{fig:3-agent-merge}
 \end{figure}
 
-\subsubsection{Map Alignment Refiner}
+\subsection{Map Alignment Refiner}
 \label{sec:map-alignment-refiner}
 As our shared map grows, the maps stored locally by the agents may "fall out of alignment". By this, we mean that the maps are slightly translated, rotated, or scaled with respect to the lead agent's map. This is largely a side effect of our aggressive early merge strategy which may merge two agents' maps before there is significant overlap, causing the estimated map alignment (ie. transformation between the two agents' origins) to have some error.
 
@@ -376,13 +376,13 @@ To remedy this problem, we continuously refine our map alignment using \nameref{
 
 We use an \textit{additive increase multiplicative decrease} methodology to control how often map alignment is performed. Given $t_i$ is the time between the $i$-th and $(i+1)$-th map alignments, we set $t_{i+1} = t_i + 1$ if the maps were well aligned, and $t_{i+1} = t_i / 2$ if the maps were not well aligned. This prevents agents from continuously performing map alignments when their maps are already well aligned.
 
-\subsubsection{Losing Localization / Connection}
+\subsection{Losing Localization / Connection}
 \label{sec:losing-localization-or-connection}
 An agent can lose localization within the map (for example, if the camera is blocked for a short period of time). When this happens, the agent signals to the other agents that it has lost localization and they temporarily stop sharing new keyframes. When the agent relocalizes itself, keyframe sharing resumes, and the agents send all the stored-up $K_{unsent}$ and $M_{unsent}$.
 
 Losing connection is very similar, where keyframe sharing is stopped until the connection is regained, at which point the agents update each other with the stored-up unsent keyframes.
 
-\subsubsection{Visualization Publisher}
+\subsection{Visualization Publisher}
 \label{sec:visualization-publisher}
 All 3D visualizations are created by publishing ROS markers, a standardized ROS message type that represents some object in 3D space such as lines, points, or meshes. These ROS markers can then be displayed by a variety of third-party visualization tools such as RViz \autocite{10.1007/s11235-015-0034-5} and Foxglove Studio \autocite{foxgloveStudio}.
 
@@ -396,11 +396,11 @@ While not a part of the core SLAM system, the motion controller node closes the 
 \label{sec:follow-the-leader}
 The \textit{follow the leader} motion controller consists of two agents: one leader and one follower. The follower is given a position and rotation offset to the leader which it attempts to maintain as the leader is moved around.
 
-For example, you could set the follower to be 1 meter behind the leader with a 180\textdegree{} rotational offset. This would mean the leader and follower never have visual overlap at any given moment, demonstrating that my SLAM system is truly building a shared map.
+% For example, you could set the follower to be 1 meter behind the leader with a 180\textdegree{} rotational offset. This would mean the leader and follower never have visual overlap at any given moment, demonstrating that my SLAM system is truly building a shared map.
 
-Spinning the agents around in a circle demonstrates that the two agents' maps are properly merged and that the agents are using map points generated by an external agent to localize themselves, giving accurate relative positioning even when there is no visual overlap at any given moment.
+% Spinning the agents around in a circle demonstrates that the two agents' maps are properly merged and that the agents are using map points generated by an external agent to localize themselves, giving accurate relative positioning even when there is no visual overlap at any given moment.
 
-\comment{TODO: add figure of the map built}
+% \comment{TODO: add figure of the map built}
 
 \subsection{Multi-Agent Collision Avoidance}
 \label{sec:multi-agent-collision-avoidance-implementation}
@@ -537,19 +537,19 @@ Once agents $m$ and $n$ merge, they publish the translation $T_{m \to n}$ to the
     \centering
     \begin{subfigure}[t]{0.3\textwidth}
         \centering
-        \includegraphics[width=0.5\linewidth]{figures/evo_1.pdf}
+        \includegraphics[width=0.4\linewidth]{figures/evo_1.pdf}
         \caption{All agents are initially unmerged.}
     \end{subfigure}%
     ~
     \begin{subfigure}[t]{0.3\textwidth}
         \centering
-        \includegraphics[width=0.5\linewidth]{figures/evo_2.pdf}
+        \includegraphics[width=0.4\linewidth]{figures/evo_2.pdf}
         \caption{$agent_0$ and $agent_1$ merge, $agent_2$ and $agent_3$ merge.}
     \end{subfigure}%
     ~
     \begin{subfigure}[t]{0.3\textwidth}
         \centering
-        \includegraphics[width=0.5\linewidth]{figures/evo_3.pdf}
+        \includegraphics[width=0.4\linewidth]{figures/evo_3.pdf}
         \caption{$agent_0$ and $agent_2$ merge.}
     \end{subfigure}%
 
@@ -586,7 +586,7 @@ I chose to deploy my system on the Cambridge RoboMaster, which is an omnidirecti
 
 This was an obvious platform to use as ROS drivers for the camera and wheels had already been developed and a ground-based platform allows for easier testing.
 
-As an aside, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, which has been submitted to the 17th International Symposium on Distributed Autonomous Robotic Systems. My distributed SLAM system running the multi-agent collision avoidance motion controller was included as one of the experiments analyzed in the paper.
+As an aside, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, which has been submitted to the 17th International Symposium on Distributed Autonomous Robotic Systems. My distributed SLAM system was included in the paper, with my system being run in conjunction with my multi-agent collision avoidance motion controller to evaluate the robotics platform's performance and capabilities.
 
 \subsection{Deploying with Docker}
 \label{sec:deploying-with-docker}
@@ -667,7 +667,7 @@ To my knowledge, this system is the first of its kind to be used in such a proje
     \makebox[#1][r]{}
 }
 
-My dissertation consists of five ROS packages, a Python library, 3D designs, and dozens more miscellaneous files, amounting to \textbf{30,000\texttt{+} lines of code} across \textbf{108 files} and \textbf{three repositories}. While lines of code and number of files are a notoriously poor measurement of complexity, I still hope to illustrate the scale of this software engineering project. The following section gives a brief overview of my codebase's structure.
+My dissertation consists of five ROS packages, a Python library, 3D designs, and dozens more miscellaneous files, amounting to \textbf{30,000\texttt{+} lines of code} across \textbf{108 files} and \textbf{three repositories}. While lines of code and number of files are a poor measurement of complexity, I still hope to illustrate the scale of this software engineering project. The following section gives a brief overview of my codebase's structure.
 
 The \texttt{distributed\_visual\_slam} repository contains the core SLAM system and all the infrastructure needed to run it. This includes five ROS packages: \texttt{slam\_system}, \texttt{motion\_controller}, \texttt{webots\_sim}, \texttt{central\_management\_interface}, and \texttt{interfaces}, which all follow the standard ROS package structure. \texttt{slam\_system} and \texttt{interfaces} are written in C++ and built using CMake, while the remaining packages are Python-based. Details of the repository's structure and line counts can be found in \autoref{fig:repo-overview-main}.
 
@@ -703,8 +703,8 @@ The \texttt{distributed\_visual\_slam} repository contains the core SLAM system 
             .3 interfaces/\DTcomment{Custom ROS message type definitions\locaddnospace{109}{\locindent}}.
             .3 tools/\DTcomment{Misc. scripts\locaddnospace{42}{\locindent}}.
             .2 .github/workflows/config.yml\DTcomment{CI/CD configuration (\cref{sec:cicd})\locaddnospace{73}{\locindent}}.
-            .2 Dockerfile\DTcomment{Main dockerfile for the project\locaddnospace{20}{\locindent}}.
-            .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson\locaddnospace{30}{\locindent}}.
+            .2 Dockerfile\DTcomment{Main dockerfile for the project (\cref{sec:docker-containers})\locaddnospace{20}{\locindent}}.
+            .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson (\cref{sec:docker-containers})\locaddnospace{30}{\locindent}}.
             .2 ....
         }
     \end{minipage}
@@ -717,16 +717,16 @@ The \texttt{rpi\_ros2\_camera\_publisher} repository holds the code, 3D files, a
 \begin{figure}[h]
     \centering
     \captionsetup{justification=raggedright,singlelinecheck=false, skip=0.5em}
-    \begin{minipage}[t]{0.925\linewidth}
+    \begin{minipage}[t]{\linewidth}
         \footnotesize
         \setlength{\DTbaselineskip}{12pt}
         \dirtree{%
             .1 rpi\_ros2\_camera\_publisher/\DTcomment{(\cref{sec:raspberry-pi-video-publisher})\locaddnospace{190}{\locsmallindent}}.
             .2 src/.
             .3 send\_images.py\DTcomment{\locaddnospace{132}{\locsmallindent}}.
-            .2 .github/workflows/config.yml\DTcomment{CI/CD configuration\locaddnospace{36}{\locsmallindent}}.
+            .2 .github/workflows/config.yml\DTcomment{CI/CD configuration (\cref{sec:cicd})\locaddnospace{36}{\locsmallindent}}.
             .2 3D\_files/.
-            .2 Dockerfile\DTcomment{Main dockerfile for the project\locaddnospace{10}{\locsmallindent}}.
+            .2 Dockerfile\DTcomment{Main dockerfile for the project (\cref{sec:docker-containers})\locaddnospace{10}{\locsmallindent}}.
             .2 docker-rpi-cam.service\DTcomment{Systemctl service file\locaddnospace{11}{\locsmallindent}}.
             .2 ....
         }
@@ -740,7 +740,7 @@ The \texttt{multi\_agent\_evo} repository, a modified version of the EVO library
 \begin{figure}[h]
     \centering
     \captionsetup{skip=0.5em}
-    \begin{minipage}[t]{0.925\linewidth}
+    \begin{minipage}[t]{\linewidth}
         \footnotesize
         \setlength{\DTbaselineskip}{12pt}
         \dirtree{%
