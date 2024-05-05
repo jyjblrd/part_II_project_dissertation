@@ -10,32 +10,32 @@
 \begin{document}
 % ----------------------------------------------------------------------
 
-\begin{titlepage} 
+\begin{titlepage}
 
-\vspace*{\fill}
+    \vspace*{\fill}
 
-% title page
-\begin{center}
-  \Huge
-  \textbf{Distributed Visual Simultaneous \\ Localization and Mapping} \\[6mm]
-  \Large
-  Part II Computer Science Project Proposal \\[2mm]
-  Joshua Bird, jyjb2 \\[2mm]
-  \today \\[8mm]
-\end{center}
+    % title page
+    \begin{center}
+        \Huge
+        \textbf{Distributed Visual Simultaneous \\ Localization and Mapping} \\[6mm]
+        \Large
+        Part II Computer Science Project Proposal \\[2mm]
+        Joshua Bird, jyjb2 \\[2mm]
+        \today \\[8mm]
+    \end{center}
 
-\vspace{150pt}
+    \vspace{150pt}
 
-{\large
-\begin{tabular}{ll}
-  \bf Project Originator:  & Joshua Bird, Jan Blumenkamp          \\[4mm]
-  \bf Project Supervisor:  & Jan Blumenkamp                \\[4mm]
-  \bf Director of Studies: & Ramsey Faragher                   \\[4mm]
-  \bf Overseers:           & Jonathon Crowcroft, Paula Buttery
-\end{tabular}
-}
+    {\large
+        \begin{tabular}{ll}
+            \bf Project Originator:  & Joshua Bird, Jan Blumenkamp       \\[4mm]
+            \bf Project Supervisor:  & Jan Blumenkamp                    \\[4mm]
+            \bf Director of Studies: & Ramsey Faragher                   \\[4mm]
+            \bf Overseers:           & Jonathon Crowcroft, Paula Buttery
+        \end{tabular}
+    }
 
-\vspace{170pt}
+    \vspace{170pt}
 
 \end{titlepage}
 
@@ -49,25 +49,25 @@ My project aims to implement a distributed multi-agent visual SLAM system, where
 
 Key components of this project include:
 \begin{enumerate}
-  \item Create an environment for testing and evaluating a multi-agent visual SLAM system locally.
-  \item Designing and implement a communication layer to enable agents to serialize/deserialize key datastructures (e.g. Keyframes, Map Points, etc.) and share information with each other.
-  \item Ensure robust performance, even when connectivity between agents is degraded.
+    \item Create an environment for testing and evaluating a multi-agent visual SLAM system locally.
+    \item Designing and implement a communication layer to enable agents to serialize/deserialize key datastructures (e.g. Keyframes, Map Points, etc.) and share information with each other.
+    \item Ensure robust performance, even when connectivity between agents is degraded.
 \end{enumerate}
 
 
 Possible extensions to this project include:
 \begin{enumerate}
-  \item \label{extension:intelligentSharing} Enable agents to intelligently share information to their peers, only sending map fragments that are relevant.
-  \item \label{extension:distributedComputation} Distributing calculations amongst the different agents, preventing the duplication of computationally intensive work such as global bundle adjustment. One possible approach would be to leverage gaussian belief propagation, a message passing algorithm to optimize a factor graph representation of the bundle adjustment problem.
-  \item \label{extension:mapCompression} Map compression algorithms.
-  \item \label{extension:extraSensors} Adding additional sensors such as ultra-wideband sensors to better localize drones using sensor fusion.
+    \item \label{extension:intelligentSharing} Enable agents to intelligently share information to their peers, only sending map fragments that are relevant.
+    \item \label{extension:distributedComputation} Distributing calculations amongst the different agents, preventing the duplication of computationally intensive work such as global bundle adjustment. One possible approach would be to leverage gaussian belief propagation, a message passing algorithm to optimize a factor graph representation of the bundle adjustment problem.
+    \item \label{extension:mapCompression} Map compression algorithms.
+    \item \label{extension:extraSensors} Adding additional sensors such as ultra-wideband sensors to better localize drones using sensor fusion.
 \end{enumerate}
 
-\newpage 
+\newpage
 
 \section{Starting Point}
 
-Visual SLAM systems are a mature and well researched subfield of Computer Science, with many advanced implementations. To avoid spending the majority of my time re-implementing a visual SLAM system, I will instead be using an existing \textbf{single-agent} visual SLAM implementation as a starting point for my project. This will allow me to focus my efforts on the distributed aspect of my project, which I beleive is novel and under-researched in the field. Furthermore, by using a cutting edge single-agent SLAM system as a foundation for my project, I hope to be able to create a distributed SLAM system that is accurate and performant enough to have real-world use cases. 
+Visual SLAM systems are a mature and well researched subfield of Computer Science, with many advanced implementations. To avoid spending the majority of my time re-implementing a visual SLAM system, I will instead be using an existing \textbf{single-agent} visual SLAM implementation as a starting point for my project. This will allow me to focus my efforts on the distributed aspect of my project, which I beleive is novel and under-researched in the field. Furthermore, by using a cutting edge single-agent SLAM system as a foundation for my project, I hope to be able to create a distributed SLAM system that is accurate and performant enough to have real-world use cases.
 
 Thus far, I have forked the ORB-SLAM3 git repository\footnote{ORB-SLAM3 is a cutting edge visual SLAM implementation published in 2021 by Campos et al.}\footnote{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}} \cite{ORBSLAM3_TRO} and made minor changes to the codebase to allow it to run on my machine.
 
@@ -77,15 +77,15 @@ I have no prior experience working with SLAM systems, but I have done research o
 \label{sec:Evaluation}
 I will evaluate this project by comparing my multi-agent system to a comparable single-agent system when run on the same dataset. This will involve:
 \begin{itemize}
-  \item Quantitatively comparing the RMS error of the predicted trajectory to the ground truth.
-  \item Qualitatively comparing the maps generated by both systems, particularly how much area they cover.
+    \item Quantitatively comparing the RMS error of the predicted trajectory to the ground truth.
+    \item Qualitatively comparing the maps generated by both systems, particularly how much area they cover.
 \end{itemize}
 
 Additionally, I will evaluate any extensions (if applicable) as follows:
 \begin{itemize}
-  \item Extension~\ref{extension:intelligentSharing} \& \ref{extension:mapCompression}: Reduction to total bytes sent between nodes in the system.
-  \item Extension~\ref{extension:distributedComputation}: Reduction in total computation done by multi-agent system.
-  \item Extension~\ref{extension:extraSensors}: Improvement in localization performance.
+    \item Extension~\ref{extension:intelligentSharing} \& \ref{extension:mapCompression}: Reduction to total bytes sent between nodes in the system.
+    \item Extension~\ref{extension:distributedComputation}: Reduction in total computation done by multi-agent system.
+    \item Extension~\ref{extension:extraSensors}: Improvement in localization performance.
 \end{itemize}
 
 To evaluate my system, I plan on using a combination of popular public datasets (e.g. EuRoC \autocite{doi:10.1177/0278364915620033}, KITTI \autocite{doi:10.1177/0278364913491297}) self-made datasets and datasets generated in the Cambridge Multi-Robot and Multi-Agent Systems Lab\footnote{\url{https://proroklab.org}}.
@@ -95,16 +95,16 @@ To evaluate my system, I plan on using a combination of popular public datasets 
 For the project to be deemed a success, the following must be successfully completed:
 
 \begin{enumerate}
-  \item Create an implementation of a multi-agent visual SLAM system, with the following capabilities:
-    \begin{enumerate}
-      \item Multiple agents will be able to localize themselves within a world using purely visual data.
-      \item Agents will be capable of communicating with each other to build a shared understanding of the world. 
-      \item Agents will be able to act independently, failing gracefully if it loses communication with its peers.
-    \end{enumerate}
-  \item Evaluate the capabilities of the system, following the guidelines set out in \autoref{sec:Evaluation}
+    \item Create an implementation of a multi-agent visual SLAM system, with the following capabilities:
+          \begin{enumerate}
+              \item Multiple agents will be able to localize themselves within a world using purely visual data.
+              \item Agents will be capable of communicating with each other to build a shared understanding of the world.
+              \item Agents will be able to act independently, failing gracefully if it loses communication with its peers.
+          \end{enumerate}
+    \item Evaluate the capabilities of the system, following the guidelines set out in \autoref{sec:Evaluation}
 \end{enumerate}
 
-\newpage 
+\newpage
 
 \section{Timetable and Milestones}
 
@@ -115,7 +115,7 @@ Get single-agent open source visual SLAM implementations running from the resear
 Continue preparatory work and set up a solid development environment for me to use when writing my own code. Includes figuring out how to develop and run a distributed system on my local machine.
 
 \subsection*{Weeks 5 to 6 (13 November - 26 November)}
-Create/find a dataset to test my distributed visual SLAM implementation on. 
+Create/find a dataset to test my distributed visual SLAM implementation on.
 
 Begin implementing distributed visual SLAM, with the different instances communicating with each other and sharing information.
 
@@ -128,15 +128,15 @@ Holiday \& revision.
 \subsection*{Weeks 12 to 13 (1 January - 14 January)}
 Holiday \& revision.
 
-Continue implementing distributed visual SLAM system. 
+Continue implementing distributed visual SLAM system.
 
 \subsection*{Weeks 14 to 15 (15 January - 28 January)}
 Explore implementing extension~\ref{extension:intelligentSharing} to intelligently share information with peers, only sending over useful parts of the map to them.
 
 \subsection*{Weeks 16 to 17 (29 January - 11 February)}
-Continue implementing distributed visual SLAM system and extension~\ref{extension:intelligentSharing}. 
+Continue implementing distributed visual SLAM system and extension~\ref{extension:intelligentSharing}.
 
-Spend time on other additional goals if I have time. 
+Spend time on other additional goals if I have time.
 
 \subsection*{Weeks 18 to 19 (12 February - 25 February)}
 Explore implementing extension~\ref{extension:distributedComputation} to prevent the duplication of work spent on doing global bundle adjustments.

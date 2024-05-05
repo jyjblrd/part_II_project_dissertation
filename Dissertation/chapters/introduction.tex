@@ -18,11 +18,11 @@ Multi-robot systems are becoming increasingly common as automation continues to 
     \end{itemize}
 }
 
-These are scenarios where multi-agent SLAM provides a compelling solution, as it enables us to build a map of an unknown environment and keep agents aware of their relative poses. However, the majority of existing multi-agent visual SLAM implementations are centralized systems, requiring the agents to maintain reliable communications with a central server in order to operate. This is extremely detrimental, as environments that do not have access to GPS or motion capture systems are also likely to have very poor communication channels – greatly limiting the use cases of these centralized multi-agent SLAM systems.
+These are scenarios where multi-agent SLAM provides a compelling solution, it allows for mapping unfamiliar environments and maintaining awareness of the positions of all agents involved. However, many of the existing multi-agent visual SLAM implementations are centralized systems, requiring agents to maintain a reliable communication link with a central server in order to operate. This is severely disadvantageous, as environments lacking access to GPS or motion capture systems often also suffer from unreliable communication channels – greatly limiting the use cases of these centralized multi-agent SLAM systems.
 
-Naturally, this leaves us with distributed multi-agent visual SLAM systems that do not rely on a centralized management server, allowing the agents to be used in environments where network infrastructure may be lacking. Instead of a central node, the agents are able to communicate peer-to-peer when they come within close proximity to one another.
+Naturally, this leaves us with distributed multi-agent visual SLAM systems that do not rely on a centralized management server, allowing the agents to be deployed in environments where network infrastructure may be lacking. Instead of utilizing a central node, the agents communicate peer-to-peer when they come within close proximity to one another.
 
-It is easy to see the broad-reaching use cases of such a system. Agents will be able to explore sections of the world independently or in small teams, sharing new world locations with their peers as they come into communication range using an ad-hoc network. Agents will be able to accurately determine their peer's locations when they are within communication range, allowing for collision avoidance and cooperative path planning.
+It is easy to see the broad-reaching use cases of such a system. Agents will be able to explore sections of their world independently, or in small teams, sharing new world locations with their peers as they come into communication range using an ad-hoc network. Additionally, agents will be able to accurately determine their peer's locations when they are within communication range, allowing for collision avoidance and cooperative path planning.
 
 \section{Project Overview}
 \label{sec:project-overview}
@@ -32,23 +32,23 @@ In this project, I: \noparskip
         \item Design and implement a novel distributed monocular visual SLAM system, capable of localization, relative pose estimation, and collaborative mapping, all while being tolerant to degraded network conditions and not reliant on any single leader agent (\autoref{sec:slam-system}).
         \item Evaluate the performance of my system on standardized datasets, \textbf{demonstrating its superior performance over comparable state-of-the-art systems} (\autoref{sec:comparison-to-related-work}).
         \item Create a simulation environment for testing and evaluating my system locally (\autoref{sec:simulation-environment}).
-        \item Develop custom motion controllers (\autoref{sec:motion-controller}) and deploy my system on physical robots, \textbf{demonstrating the practical use cases of this system and benchmarking real-world performance} (\autoref{sec:real-world-experiments}).
-        \item \textbf{Contribute as a co-author to the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, where my distributed SLAM system was included in the paper and used to evaluate the robotics platform (\autoref{sec:cambridge-robomaster-platform}).
+        \item Develop a custom motion control framework (\autoref{sec:motion-controller}) and deploy it alongside my SLAM system on physical robots, \textbf{demonstrating the practical use cases of my system and benchmarking real-world performance} (\autoref{sec:real-world-experiments}).
+        \item \textbf{Contribute as a co-author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}. My distributed SLAM system is included in the paper and used to evaluate the robotics platform (\autoref{sec:cambridge-robomaster-platform}).
         \item Develop \textit{Multi-Agent EVO} – the first open-source evaluation library for multi-agent SLAM systems (\autoref{sec:multi-agent-evo}).
-        \item Develop the \textit{Raspberry Pi Video Publisher} – a performant platform for SLAM data collection or augmented reality visualizations – and set up a continuous integration and deployment pipeline to automatically push the latest build to the hardware (\autoref{sec:raspberry-pi-video-publisher}).
+        \item Develop the \textit{Raspberry Pi Video Publisher} – a performant platform for SLAM data collection or augmented reality visualizations – and set up a continuous integration and deployment pipeline to automatically deploy the latest builds to the devices (\autoref{sec:raspberry-pi-video-publisher}).
     \end{enumerate}
 }
 
 \begin{leftbar}
-    \textbf{A short video demonstration of my project is provided at the following URL:} \url{https://cam-diss.s3.amazonaws.com/video.mp4} \comment{TODO: fix video index} \captionbreak Due to the highly visual and 3D nature of my project, \textbf{I strongly recommend viewing the video}. It will provide an intuition of my system, making the following chapters easier to visualize and understand. Additionally, it is referenced throughout the dissertation.
+    \textbf{A short video demonstration of my project is provided at the following URL:} \url{https://cam-diss.s3.amazonaws.com/video.mp4} \comment{TODO: fix video index} \captionbreak Due to the highly visual and 3D nature of my project, \textbf{I strongly recommend viewing the video}. It will provide an intuition of my system, making the following chapters easier to visualize and understand. Additionally, it is referenced throughout this dissertation.
 \end{leftbar}
 
 \begin{figure}[h]
     \centering
-    \captionsetup{format=plain}
+    \captionsetup{format=plain, labelformat=empty}
     \begin{subfigure}[t]{0.475\linewidth}
         \centering
-        \includegraphics[height=2.4in]{figures/euroc_mh_map.png}
+        \includegraphics[height=2.3in]{figures/euroc_mh_map.png}
         \caption{EuRoC Machine Hall 01-03}
     \end{subfigure}\hfill%
     ~
@@ -58,6 +58,6 @@ In this project, I: \noparskip
         \caption{TUM-VI Rooms 1-3}
     \end{subfigure}
 
-    \caption{Sparse maps built by my distributed SLAM system running industry-standard datasets.}
+    \caption{The figures above display sparse maps built by my distributed SLAM system after running industry-standard multi-agent datasets.}
     \label{fig:example-maps}
 \end{figure}
