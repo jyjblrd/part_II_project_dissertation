@@ -107,6 +107,8 @@ None.
 %TC:envir minted 1 xall 
 %TC:macro \mintinline [ignore]
 %TC:envir algorithmic 1 xall
+%TC:envir equation [ignore] ignore
+%TC:envir flalign [ignore] ignore
 
 % Include tables in word count
 %TC:envir table 0 word
@@ -152,7 +154,14 @@ None.
 
 \addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
 
+\chapter{Additional Figures}
+
+\input{chapters/appendices/A_additional_figures.tex}
+
+\newpage
+
 \chapter{Project Proposal}
+\label{sec:project-proposal}
 
 \includepdf[pages=2-]{../Proposal/Phase_3.pdf}
 

@@ -83,15 +83,15 @@ Each agent's \texttt{Decentralized System Manager} maintains a state machine for
 
 \subsection{Map Serialization and Deserialization}
 \label{sec:map-serialization-and-deserialization}
-Map serialization and deserialization are essential and non-trivial components of this SLAM system, allowing agents to share their maps across the network. For this task, I used the Boost \autocite{boostLibrary} Serialization C++ library since it supports standard library collections and other common classes.
+Map serialization and deserialization are essential and non-trivial components of this SLAM system, enabling agents to share their maps across the network. For this task, I used the Boost \autocite{boostLibrary} Serialization C++ library since it supports standard library collections and other common classes.
 
 As discussed in \autoref{sec:datastructures}, maps contain keyframes and map points. Individually, these objects are relatively easy to serialize with boost – in fact, the single agent SLAM program my system is based on already supported saving and loading maps allowing me to leverage some of their serialization helper functions. To serialize these objects we simply need to define a serialization scheme for each class, describing which instance variables should be serialized and which shouldn't. Strategically selecting only the parameters that need to be serialized allows us to cut back on communication overhead. For example, there is no need for us to serialize a keyframe's raw image, as it is not used in the rest of our SLAM pipeline.
 
-Complexities arise when we try to serialize/deserialize the connections between these objects, especially when we are only sending map fragments. For example, if we send a new keyframe $k$ and its map points $M_k$ to an external agent, due to the many-to-many relationship between keyframes and map points, some of the map points in $M_k$ may have already been sent before. We can define $M_k = M_{k\_sent} \cup M_{k\_unsent}$, where $M_{k\_sent}$ are the map points that have already been sent to the external agent and $M_{k\_unsent}$ are the ones that have not. Map points in $M_{k\_sent}$ will need to be connected to $k$ when it is deserialized by the external agent, and map points in $M_{k\_unsent}$ will need to be sent to the external agent and connected to any existing keyframes in the external map that observe the map points. These connections are further explained in the \nameref{sec:external-key-frame-inserter} section, particularly \autoref{fig:external-keyframe-inserter}.
+Complexities arise when we try to serialize/deserialize the connections between these objects, especially when we are only sending map fragments as we may be required to ``relink'' deserialized objects with objects in our local map. We manage these connections by giving every keyframe and map point a universal unique identifier (UUID), allowing us to use these UUIDs as references to a specific object in our multi-agent system. We use UUIDs since they do not require a centralized server or any communication with our peers to assign a unique ID to every object\footnote[1]{While not \textit{verifiablly} unique, UUIDs are unique within practical limits. A commonly cited anecdote is that it is far more likely for a cosmic ray to cause a bug than a UUID collision.}.
 
-We manage these connections by giving every keyframe and map point a universal unique identifier (UUID), allowing us to use these UUIDs as references to a specific object in our multi-agent system. We use UUIDs since they do not require a centralized server or any communication with our peers to assign a unique ID to every object\footnote[1]{While not \textit{verifiablly} unique, UUIDs are unique within practical limits. A commonly cited anecdote is that it is far more likely for a cosmic ray to cause a bug than a UUID collision.}.
+% For example, if we send a new keyframe $k$ and its map points $M_k$ to an external agent, due to the many-to-many relationship between keyframes and map points, some of the map points in $M_k$ may have already been sent before. We can define $M_k = M_{k\_sent} \cup M_{k\_unsent}$, where $M_{k\_sent}$ are the map points that have already been sent to the external agent and $M_{k\_unsent}$ are the ones that have not. Map points in $M_{k\_sent}$ will need to be connected to $k$ when it is deserialized by the external agent, and map points in $M_{k\_unsent}$ will need to be sent to the external agent and connected to any existing keyframes in the external map that observe the map points. These connections are further explained in the \nameref{sec:external-key-frame-inserter} section, particularly \autoref{fig:external-keyframe-inserter}.
 
-This method of using UUIDs as references is used to rebuild all connections after deserialization, including the keyframe-to-keyframe connections that build the co-visibility graph and many others which I have not had the space to discuss in this dissertation.
+This method of using UUIDs as references is used to rebuild all connections after deserialization, including the keyframe-to-keyframe connections that build the co-visibility graph and many others which I have not had the space to discuss in this dissertation. A good example of connection rebuilding is later given in \autoref{fig:external-keyframe-inserter}, which shows how external map fragments are relinked with the local map.
 
 \subsection{External Map Merge Finder}
 \label{sec:external-map-merge-finder}
@@ -214,7 +214,7 @@ The final version of the map merger works as follows:
 
 \begin{enumerate}
     \item \textbf{Request external agent's full map.} \\
-          Once a potential map merge with the external agent is identified by the \hyperref[sec:external-map-merge-finder]{external map merge finder}, we can begin a full merge attempt. We first request the full map from the external agent. Once the map is received, we deserialize it and temporarily place it into our \texttt{map database} data structure as a separate map.
+          Once a potential map merge with the external agent is identified by the \hyperref[sec:external-map-merge-finder]{external map merge finder}, we request its full map. Once the map is received, we deserialize it and temporarily place it into our \texttt{map database} data structure as a separate map.
     \item \textbf{Confirm that a map merge is possible using the full map data, and find the translation $T_{loc \rightarrow ext}$ that aligns the local map to the external map.} \\
           The visual word map merge finder identifies potential merges, however, we still need to confirm that a map merge is possible using the full map data from both agents. This is performed using a modified version of the ORB-SLAM3 loop closure detector.
 
@@ -255,9 +255,9 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
     \item \textbf{Relink $M_{ext}$ with keyframes in the local map which observe it}. \\
           $M_{ext}$ contains references to keyframes that observe it which have already been sent or were generated by another agent. We search our local map for keyframes that match these references, reconnecting them.
     \item \textbf{Merge $M_{ext}$ with map points in the local map}. \\
-          $M_{ext}$ will already be correctly linked to observing keyframes in the local map from step 4., however, due to communication latency some map points in $M_{ext}$ may be duplicates of existing map points in the local map. Therefore, we exploit spatial locality to combine duplicate map points that describe the same physical feature. A key observation from testing was that this step is essential to ensuring the local and external keyframes stay well connected, ensuring the local and external maps do not diverge.
+          $M_{ext}$ will already be correctly linked to observing keyframes in the local map from step 4., however, due to communication latency some map points in $M_{ext}$ may be duplicates of existing map points in the local map. Therefore, we exploit spatial locality to merge duplicate map points that describe the same physical feature. A key observation from testing was that this step is essential to ensuring the local and external keyframes stay well connected, ensuring the local and external maps do not diverge.
     \item \textbf{Perform a local pose graph optimization around $k_{ext}$}. \\
-          Since we have merged map points in the previous step, we need to a local perform pose graph optimization to tweak the keyframe and map point locations to minimize reprojection errors. This helps create a more accurate map, improving the estimated trajectory's accuracy. Since we only perform this optimization with spatially local keyframes and map points, the computational overhead is relatively low.
+          This optimizes our map using the new information we received from the external agent.
 \end{enumerate}
 
 
@@ -319,21 +319,19 @@ The \texttt{Tracking} and \texttt{Mapping} modules, which are responsible for lo
 \label{sec:generalizing-to-n-geq-3-agent-systems}
 Now that we have explained how a pair of agents interact, we can explore how this can be generalized to a system with an arbitrary number of agents.
 
-We assume a system with $N$ agents $A=\{agent_1, agent_2, ..., agent_N\}$, where $agent_i$ is the agent with ID = i. Within this system we maintain a state $S_i=state_{n-m}$ for every agent pair $(agent_n, agent_m)$, giving us a total of $N(N-1)/2$ states. Conceptually, this is a fully connected graph with agents as the nodes and states between agents as the edges. We also have a set $G$ which contains all the groups of merged agents. The \textit{group leader} is defined as the agent in a group with the lowest agentId.
+We assume a system with $N$ agents $A=\{agent_1, agent_2, ..., agent_N\}$, where $agent_i$ is the agent with ID = i. Within this system we maintain a state $S_i=state_{n-m}$ for every agent pair $(agent_n, agent_m)$, giving us a total of $N(N-1)/2$ states. We also have a set $G$ which contains all the groups of merged agents. The \textit{group leader} is defined as the agent in a group with the lowest agentId.
 
 In the case where agents can lose communication with one another, we also assume that if any given $agent_n$ is able to communicate with an $agent_m$, $agent_n$ can also communicate with all of $agent_m$'s connected peers. This is held if the agents are using a mesh network to communicate, for example.
 
 Initially, every agent pair is unmerged so every state in $S$ is set as \textit{unmerged} and $G=\{\{agent_1\}, \{agent_2\}, ..., \{agent_N\}\}$
 
-A key insight of my distributed SLAM system is to delegate all merge operations to group leaders. This means that instead of all agents attempting merges with every other agent, only group leaders have to attempt merges amongst themselves. This is significant, as the computational load of these merge operations scale proportional to the square of the number of agents involved, and in most use cases the number of group leaders quickly drops to be much lower than the total number of agents.
+A key insight of my distributed SLAM system is to delegate all merge operations to group leaders. This is significant, as the computational load of these merge operations scale proportional to the square of the number of agents involved, and in most use cases the number of group leaders quickly drops to be much lower than the total number of agents. Additionally, having all merge operations performed by the group leader prevents potential race conditions introduced by communication latency within a group, for example, two agents within a group merging with different agents at the same time.
 
-Additionally, having all merge operations performed by the group leader prevents potential race conditions introduced by communication latency within a group, for example two agents within a group both merging with different agents at the same time.
+As discussed in the \hyperref[sec:external-map-merge-finder]{External Map Merge Finder} and \hyperref[sec:external-map-merger]{External Map Merger} sections, the two operations needed to merge are (1) exchanging visual words to identify visual overlap and therefore merge opportunities and (2) sending over the map and attempting a full map merge. We must therefore get our group leaders to perform these tasks to identify merges between groups.
 
-As discussed in the \hyperref[sec:external-map-merge-finder]{External Map Merge Finder} and \hyperref[sec:external-map-merger]{External Map Merger} sections, the two major operations needed to merge are (1) exchanging visual words to identify visual overlap and therefore merge opportunities and (2) sending over the map and attempting a full map merge. We must therefore get our group leaders to perform these tasks to identify merges between groups.
+The ``visual word merge finder'' operation can be delegated to group leaders by having them send the visual words of all keyframes generated by agents within their group to all other group leaders. This introduces no additional intra-group communication, as all agents within a group already send each other all new keyframes.
 
-The ``visual word merge finder'' operation can be performed between group leaders by getting them to send the visual words of all keyframes generated by agents within their group to all other group leaders. This introduces no additional intra-group communication, as all agents within a group already send each other all new keyframes.
-
-Moving on to the ``full map merge'' operation, once a pair of group leaders $(agent_n, agent_m)$ (with $n<m$) have found a potential merge using visual words, the agent with the smaller ID ($agent_n$) sends its full map to the agent with the larger ID ($agent_m$), who attempts a full map merge. If the merge is successful, $agent_m$ will now be in $agent_n$'s coordinate frame. $agent_m$ will then send the transform from $agent_m$ to $agent_n$'s coordinate frame $T_{m \to n}$ to all the agents in its group, allowing them to also change to $agent_n$'s coordinate frame. After this has been completed, $agent_m$'s group merges into $agent_n$'s group by updating $S$ according to \autoref{eq:state-update-equation}, and agents begin exchanging keyframes to update the unified map. Once all agents have merged with one another, they will all be in $agent_0$'s coordinate frame, as it has the lowest ID.
+Moving on to the ``full map merge'' operation, once a pair of group leaders $(agent_n, agent_m)$ (with $n<m$) have found a potential merge using visual words, the agent with the smaller ID ($agent_n$) sends its full map to the agent with the larger ID ($agent_m$), who attempts a full map merge. If the merge is successful, $agent_m$ will now be in $agent_n$'s coordinate frame. $agent_m$ will then send the transform from $agent_m$ to $agent_n$'s coordinate frame $T_{m \to n}$ to all the agents in its group, allowing them to also change to $agent_n$'s coordinate frame. After this has been completed, $agent_m$'s group merges into $agent_n$'s group by updating $S$ according to \autoref{eq:state-update-equation}, and agents begin exchanging keyframes to update the unified map.
 
 This approach requires all agents to know the current groups and group leaders within the decentralized system, which is achieved by broadcasting all successful merge messages on the \texttt{/successfully\_merged} ROS topic for everyone to see.
 
@@ -356,9 +354,7 @@ This whole process is perhaps best represented in visual form by the simple 3-ag
 
 \subsection{Map Alignment Refiner}
 \label{sec:map-alignment-refiner}
-As our shared map grows, the maps stored locally by the agents may ``fall out of alignment''. In other words, the maps are slightly translated, rotated, or scaled with respect to the lead agent's map. This is largely a side effect of our aggressive early merge strategy which may merge two agents' maps before there is significant overlap, causing the estimated map alignment to have some error.
-
-These small alignment errors are completely acceptable when maps are small, but may cause the maps to diverge as they grow.
+As our shared map grows, our local map may ``fall out of alignment''. In other words, the map is slightly translated, rotated, or scaled with respect to the lead agent's map. This is largely a side effect of our aggressive early merge strategy which may merge two agents' maps before there is significant overlap, causing the estimated map alignment to have some error. These small alignment errors are completely acceptable when maps are small, but may cause the maps to diverge as they grow.
 
 To remedy this problem, we continuously refine our map alignment using the \nameref{sec:ransac} and \hyperref[sec:kabsch-umeyama-algorithm]{Kabsch-Umeyama point set alignment} algorithms. Map alignment is performed as follows:
 
@@ -368,10 +364,8 @@ To remedy this problem, we continuously refine our map alignment using the \name
     \item \textbf{Extract local map point locations}. \\
           This is defined as the set TaggedMP$_{local}$ where TaggedMP${_{local}}_i = (\text{uuid}, (x, y, z))$
     \item \textbf{Use RANSAC with the Kabsch-Umeyama algorithm to find the transform $T_{local \to ext}$ which best aligns TaggedMP$_{local}$ to TaggedMP$_{ext}$.} \\
-          The Kabsch-Umeyama algorithm finds the SIM(3) transformation $T_{local \to ext}$ from TaggedMP$_{ext}$ to TaggedMP$_{local}$, minimizing the root mean squared error. However, our input data may contain a large number of outliers so we use RANSAC to find a good fit while ignoring outliers.
-
-          The RANSAC and Kabsch-Umeyama algorithms are described in detail in \autoref{sec:ransac} and \autoref{sec:kabsch-umeyama-algorithm} respectively.
-    \item \textbf{Apply transformation $T_{local \to ext}$ to our local map to realign our map with the group leader.}
+          The \hyperref[sec:kabsch-umeyama-algorithm]{Kabsch-Umeyama} algorithm finds the SIM(3) transformation $T_{local \to ext}$ from TaggedMP$_{ext}$ to TaggedMP$_{local}$, minimizing the root mean squared error. However, our input data may contain a large number of outliers so we use \nameref{sec:ransac} to find a good fit while ignoring outliers.
+    \item \textbf{Apply transformation $T_{local \to ext}$ to our local map to realign it with the group leader.}
 \end{enumerate}
 
 We use an \textit{additive increase multiplicative decrease} methodology to control how often map alignment is performed. Given $t_i$ is the time between the $i$-th and $(i+1)$-th map alignments, we set $t_{i+1} = t_i + 1$ if the maps were well aligned, and $t_{i+1} = t_i / 2$ if the maps were not well aligned. This prevents agents from continuously performing map alignments when their maps are already well aligned.
@@ -386,11 +380,11 @@ Losing connection is very similar, however, a new private map does not need to b
 \label{sec:visualization-publisher}
 All 3D visualizations are created by publishing ROS markers, a standardized ROS message type that represents some object in 3D space such as lines, points, or meshes. These ROS markers can then be displayed by a variety of third-party visualization tools such as RViz \autocite{10.1007/s11235-015-0034-5} and Foxglove Studio \autocite{foxgloveStudio}.
 
-Using ROS markers allows me to leverage these mature visualization tools instead of creating one from scratch, and also allows visualizations to be easily saved and replayed for later analysis. Demonstrations of these 3D visualizations can be found in the supplementary video\footnote[1]{\url{https://cam-diss.s3.amazonaws.com/video.mp4}}
+Using ROS markers allows me to leverage these mature visualization tools instead of creating one from scratch, and also allows visualizations to be easily saved and replayed for later analysis. Demonstrations of these 3D visualizations can be found in the supplementary video\footnote[1]{Supplementary video URL: \url{https://cam-diss.s3.amazonaws.com/video.mp4}}
 
 \section{Motion Controller}
 \label{sec:motion-controller}
-While not a part of the core SLAM system, the motion controller node closes the control loop and demonstrates the real-world usability of my system. From a high level, the motion controller node consumes the local and external agents' poses and outputs a command velocity to the robot's movement system – all via ROS topics. For this project, I have implemented two different motion control systems which can be switched between seamlessly.
+While not a part of the core SLAM system, the motion controller node closes the control loop and provides real-world demonstrations of my system. From a high level, the motion controller node consumes the local and external agents' poses and outputs a command velocity to the robot's movement system – all via ROS topics. For this project, I have implemented two different motion control systems which can be switched between seamlessly.
 
 \subsection{Follow The Leader}
 \label{sec:follow-the-leader}
@@ -433,17 +427,17 @@ $J_s$ and $J_d$ penalize collisions with static objects and dynamic objects resp
     J_s(\bm{x}) & = \sum_{i=1}^{N_{static}} \frac{s_s*Q_s}{1 + \exp(d_i^{static} / s_s)}   \\
     J_d(\bm{x}) & = \sum_{i=1}^{N_{dynamic}} \frac{s_d*Q_d}{1 + \exp(d_i^{dynamic} / s_d)}
 \end{flalign}
-where $d_i^{static}$ is the distance between the agent and the $i-th$ static obstacle, and $d_i^{dynamic}$ is the distance between the agent and the $i-th$ dynamic obstacle. For example, if the $i-th$ dynamic obstacle is another agent with radius $r$ then $d_i^{dynamic} = \|\bm{x}(t)-\bm{x_i}(t)\|^2 - r$. $Q_s>0$ and $Q_d>0$ are weights that define how adverse our agents are to collision with static and dynamic obstacles respectively. A visualization of how these parameters affect the cost function is presented in \autoref{fig:nmpc_cost_function-a}.
+where $d_i^{static}$ is the distance between the agent and the $i-th$ static obstacle, and $d_i^{dynamic}$ is the distance between the agent and the $i-th$ dynamic obstacle. $Q_s>0$ and $Q_d>0$ are weights that define how adverse our agents are to collision with static and dynamic obstacles respectively. A visualization of how these parameters affect the cost function is presented in \autoref{fig:nmpc_cost_function-a}.
 
-Additionally, we define $s_s$ and $s_d$ as scale normalizing parameters that ensure the minima of $J_x + J_s$ and $J_x + J_d$ are greater than agent radius $r$ in the single obstacle case. Essentially, this guarantees that the optimized trajectory of the agent never comes within radius $r$ of an obstacle unless it is being "squished" by two obstacles.
-
-To calculate $s_s$, we first find the positive minima $x_{min}$ of $J_x + J_s$ in the worst case where $d_i^{static} = J_x$ (ie. the static obstacle and $x_{ref}$ are in the same place), with $s=1$. This gives us $x_{min}$ as defined in \autoref{eq:x-min}. Our scaling factor can then be defined as $s_s = \frac{r}{x_{min}}$, which sets the positive minima of $J_x + J_s$ to be $r$ in the above situation. The calculation of $s_d$ is symmetric, simply using $Q_d$ instead of $Q_s$.
+Additionally, we define $s_s$ and $s_d$ as scale normalizing parameters that ensure the minima of $J_x + J_s$ and $J_x + J_d$ are invariant to $Q_s$ and $Q_d$. To calculate $s_s$, we first find the positive minima $x_{min}$ of $J_x + J_s$ in the worst case where $d_i^{static} = J_x$ (ie. the static obstacle and $x_{ref}$ are in the same place), with $s=1$. This gives us $x_{min}$ as defined in \autoref{eq:x-min}. Our scaling factor can then be defined as $s_s = \frac{r}{x_{min}}$, which sets the positive minima of $J_x + J_s$ to be $r$ in the above situation. The calculation of $s_d$ is symmetric, simply using $Q_d$ instead of $Q_s$.
 
 \begin{equation} \label{eq:x-min}
     x_{min} = \ln \left( \frac{\sqrt{Q_s^2-4Q_s}+Q_s}{2}-1 \right)
 \end{equation}
 
-The key benefit of these cost functions is that the optimal distance to obstacles of $r$ is invariant to parameters $Q_s$ and $Q_d$. This is in contrast to \autocite{DBLP:journals/corr/KamelASN17} which requires the parameters $\kappa$ and $Q$ to be re-tuned after changing agent radius $r$. This is because their cost functions do not have their minima at the collision point, but instead at some point before the collision that varies with $\kappa$, $Q$, and $r$, making them very difficult to tune. This is visualized in \autoref{fig:nmpc_cost_function}
+The key benefit of these cost functions is that the optimal distance to obstacles is kept at the collision point, and is invariant to parameters $Q_s$ and $Q_d$. This is in contrast to \autocite{DBLP:journals/corr/KamelASN17} which requires the parameters $\kappa$ and $Q$ to be re-tuned after changing agent radius $r$. This is because their cost functions do not have their minima at the collision point, but instead at some point before the collision that varies with $\kappa$, $Q$, and $r$, making them very difficult to tune. This is visualized in \autoref{fig:nmpc_cost_function}
+
+% TODO could be explained better idk
 
 \begin{figure}[h]
     \centering
@@ -477,23 +471,18 @@ Solving the integral in \autoref{eq:nmpc-minimization-problem} is computationall
 
 The \textit{Sequential Least Squares Programming} minimization method is used due to its robustness and ability to constrain the optimization space, which we use to keep $\bm{v_{min}} \leq \bm{v_{cmd}} \leq \bm{v_{max}}$. We set parameters $Q_s = 8$ and $Q_d = 12$ to make the agent more adverse to approaching dynamic obstacles than static ones, as there is more uncertainty in the dynamic obstacle's location. To calculate the future locations of dynamic obstacles $\bm{x_i^{dynamic}}(t)$ we employ a simple constant velocity model.
 
-Our SLAM system does not use a depth camera or LiDAR, and therefore only produces a sparse map. Consequently, we need to define the location of static obstacles manually. Both static obstacles and the goal pose are set using interactive ROS markers, allowing them to be changed ``on the fly" using software such as RViz.
+% Our SLAM system does not use a depth camera or LiDAR, and therefore only produces a sparse map. Consequently, we need to define the location of static obstacles manually. Both static obstacles and the goal pose are set using interactive ROS markers, allowing them to be changed ``on the fly" using software such as RViz.
 
 \section{Central Management Interface}
 \label{sec:central-management-interface}
-While my multi-agent system is fully decentralized, a significant amount of work was put into developing the supporting infrastructure needed to control, test, and evaluate this system.
-
-% This was part of a broader aim of this project to create more than just a research project that only runs on my machine. I have strived to develop a system that can be deployed in real-world use cases, and the significant infrastructure released alongside my SLAM system hopes to help achieve that goal.
-
-The primary method of managing the distributed system is through the \textit{Central Management Interface}, which can be used to: \noparskip
+While my multi-agent system is fully decentralized, a significant amount of work was put into developing the supporting infrastructure needed to control, test, and evaluate this system. The primary method of managing the distributed system is through the cross-platform \textit{Central Management Interface}, which can be used to: \noparskip
 \smallbreak
 {
     \begin{enumerate}
         \item \textbf{Manually control the agent's poses.} \\
               Users can click and drag on an image in area 1 to rotate the agent's camera and use the keyboard to move the agent around.
         \item \textbf{Record camera data from the simulation software.}
-        \item \textbf{Play datasets back for testing and benchmarking purposes.} \\
-              Additionally, there are settings to remap topics and control the speed of playback.
+        \item \textbf{Play datasets back for testing and benchmarking purposes.}
         \item \textbf{Record trajectories generated by the SLAM system as well as ground truth data for later evaluation.} \\
               The recorded trajectory data can later be ingested by my custom evaluation library Multi-Agent Evo for analysis.
     \end{enumerate}
@@ -517,13 +506,11 @@ The primary method of managing the distributed system is through the \textit{Cen
     \label{fig:central-management-interface}
 \end{figure}
 
-The central management interface was built using the PyQt cross-platform user interface framework.
-
-As a result of abstracting implementation details behind ROS topics, this central management interface is able to work seamlessly with both agents running in a simulator and agents running on real-world robots. This is true of every component of this project.
+As a result of abstracting implementation details behind ROS topics, this central management interface is able to work seamlessly with both agents running in a simulator and agents running on real-world robots.
 
 \section{Custom Evaluation Suite – Multi-Agent EVO}
 \label{sec:multi-agent-evo}
-While there are several mature single-agent SLAM evaluation tools, I found there to be a complete lack of evaluation tools for multi-agent SLAM systems – to the best of my knowledge no papers have published their evaluation code. Continuing with my goal to develop and publish transferrable infrastructure alongside this project, I have created an open-source multi-agent SLAM evaluation tool: \textit{Multi-Agent EVO}, based on the popular single agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
+While there are several mature single-agent SLAM evaluation tools, I found there to be a complete lack of evaluation tools for multi-agent SLAM systems – to the best of my knowledge no papers have published their evaluation code. Therefore, I have created an open-source multi-agent SLAM evaluation tool: \textit{Multi-Agent EVO}, based on the popular single-agent SLAM evaluation tool \textit{EVO} \autocite{grupp2017evo}.
 
 In addition to the data structures and data ingestion modifications needed for EVO to process multi-agent SLAM data, evaluating data from a multi-agent system introduces some additional complexities.
 
@@ -582,19 +569,19 @@ After months of development within a simulator, my distributed SLAM system was a
 
 \subsection{Cambridge RoboMaster Platform}
 \label{sec:cambridge-robomaster-platform}
-I chose to deploy my system on the Cambridge RoboMaster, which is an omnidirectional robot platform with a NVidia Jetson Orin for compute. The only sensor used on the RoboMaster was the integrated Raspberry Pi HQ Camera, which provides a 1920x1080 image at 15hz.
+I chose to deploy my system on the Cambridge RoboMaster, which is an omnidirectional robot platform with a NVidia Jetson Orin for compute. The only sensor used on the RoboMaster was the integrated Raspberry Pi HQ Camera, which provides a 1920x1080 image at 15hz. This was an obvious platform to use as ROS drivers for the camera and wheels had already been developed and a ground-based platform allows for easier testing.
 
-This was an obvious platform to use as ROS drivers for the camera and wheels had already been developed and a ground-based platform allows for easier testing.
+As explained in the \nameref{sec:cicd} section, my system is compiled in the cloud and deployed on the robots in Docker containers.
 
 As an aside, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, which has been submitted to the 17th International Symposium on Distributed Autonomous Robotic Systems. My distributed SLAM system was included in the paper, with my system being run in conjunction with my multi-agent collision avoidance motion controller to evaluate the robotics platform's performance and capabilities.
 
-\subsection{Deploying with Docker}
-\label{sec:deploying-with-docker}
-My SLAM system is deployed on the RoboMasters in Docker containers. This allows my code to be compartmentalized from other projects being developed on the RoboMasters, as they are actively used by numerous researchers in the Prorok Lab. Additionally, I have set up a continuous integration process on GitHub to cross-compile a Docker container for the RoboMasters on every code push, which can then be pulled to the RoboMasters. This is a very useful feature, as building my full codebase can take upwards of 20 minutes on the NVidia Jetson Orins.
+% \subsection{Deploying with Docker}
+% \label{sec:deploying-with-docker}
+% My SLAM system is deployed on the RoboMasters in Docker containers. This allows my code to be compartmentalized from other projects being developed on the RoboMasters, as they are actively used by numerous researchers in the Prorok Lab. Additionally, I have set up a continuous integration process on GitHub to cross-compile a Docker container for the RoboMasters on every code push, which can then be pulled to the RoboMasters. This is a very useful feature, as building my full codebase can take upwards of 20 minutes on the NVidia Jetson Orins.
 
 \subsection{OptiTrack Motion Capture System}
 \label{sec:optitrack-motion-capture-system}
-The ground truth for my real-world experiments are provided by the Prorok Lab's OptiTrack Motion Capture System, which advertises accuracies of $\leq$0.3mm at rates of 180hz \autocite{OptiTrackForRobotics}. The motion capture system publishes the real-time poses of the tracked objects to a ROS topic which can be recorded for later analysis.
+The ground truth for my real-world experiments is provided by the Prorok Lab's OptiTrack Motion Capture System, which advertises accuracies of $\leq$0.3mm at rates of 180hz \autocite{OptiTrackForRobotics}. The motion capture system publishes the real-time poses of the tracked objects to a ROS topic which can be recorded for later analysis.
 
 \subsection{Raspberry Pi Video Publisher}
 \label{sec:raspberry-pi-video-publisher}
@@ -602,9 +589,11 @@ This dissertation also presents the Raspberry Pi Video Publisher, an independent
 
 The hardware for this platform consists of a Raspberry Pi 4b, Raspberry Pi Camera v2, 3D printed frame, and motion capture markers. The 3D-printed frame securely mounts the components together, allowing the system to be carried around or mounted to a tripod as shown in \autoref{fig:rpi-cam}.
 
-ROS does not support streaming videos across a network, instead requiring frames to be sent as individual compressed images. This results in significant computational overhead, with a naive ROS video publisher implementation only being able to stream at 10 frames per second on the Raspberry Pi. To enable a 30 frame per second video stream, my implementation uses three threads. The first thread captures images from the camera, the second encodes them as a JPEG image, and the third publishes the images to a ROS topic.
+ROS does not support streaming videos across a network, instead requiring frames to be sent as individual compressed images. This results in significant computational overhead, with a naive ROS video publisher implementation only being able to stream at 10 frames per second on the Raspberry Pi. To enable a 30-frame-per-second video stream, my implementation uses three threads. The first thread captures images from the camera, the second encodes them as a JPEG image, and the third publishes the images to a ROS topic.
 
-As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. This is particularly useful, as it is designed as a plug-and-play system that starts streaming video data as soon as it is turned on.
+As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository.
+
+% As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. This is particularly useful, as it is designed as a plug-and-play system that starts streaming video data as soon as it is turned on.
 
 \begin{figure}[h]
     \centering
@@ -631,6 +620,8 @@ As explained in the \nameref{sec:cicd} section, the software for this platform i
 The Raspberry Pi Video Publisher platform is tracked by the motion capture system, allowing us to project 3D visualization data onto the captured video. This can be used to visualize the SLAM system's keyframe and map point locations in the real world and to view how the predicted trajectory aligns with reality.
 
 To overlay this data on the video, we must first align the SLAM system and motion capture systems' coordinate frames. This needs to be done on every run, as monocular SLAM systems have an arbitrary scale. Therefore, we use the \nameref{sec:kabsch-umeyama-algorithm} to align the trajectories captured by the motion capture system and SLAM system after enough data has been collected to create a successful alignment. We can then use Foxglove Studio to draw our 3D markers and project them on top of the tracked camera's video stream, a snapshot of which is displayed in \autoref{fig:ar-overlay-map-points}.
+
+Importantly, the tool is built around the standard ROS marker interface. This makes it a generic platform that can give an AR visualization of any experiment being conducted in a motion capture environment.
 
 To my knowledge, this system is the first of its kind to be used in such a project. Not only is it visually impressive, but it also can be used for further analysis and understanding. For example, this visualization helped me identify that my collision avoidance demo was being severely impacted by latency spikes which I proceeded to fix.
 

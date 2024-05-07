@@ -18,9 +18,9 @@ I chose ORB-SLAM3 \autocite{ORBSLAM3_TRO} as the single-agent SLAM system to bas
 
 While ORB-SLAM3 is an excellent SLAM system, it is fundamentally a single-agent system with no considerations in place for use in a multi-agent context. As I will later expand upon, a significant amount of time and effort was required to understand its extremely large and undocumented codebase, especially since an almost complete understanding of its inner workings was needed to both extract and inject map information from the system. In retrospect, using an existing single-agent SLAM system as a foundation did not save as much time as it took almost a month to get ORB-SLAM compiled and running locally, and many more before I was able to make good progress on the distributed aspect of my project.
 
-Nevertheless, using a cutting-edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that performs better than comparable state-of-the-art systems, making it suitable for real-world applications.
+% Nevertheless, using a cutting-edge single-agent SLAM system as a foundation for my project has allowed me to create a distributed SLAM system that performs better than comparable state-of-the-art systems, making it suitable for real-world applications.
 
-At the time of submitting my project proposal, I had forked the ORB-SLAM3 git repository\footnote[1]{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}} and explored the codebase. ORB-SLAM3 is licensed under GPL-3 \autocite{gplv3}, and as such, I have open-sourced my code under the same license. I had no prior experience with SLAM systems but did research the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it from being a duplication of prior work.
+At the time of submitting my project proposal, I had forked the ORB-SLAM3 git repository\footnote[1]{\url{https://github.com/UZ-SLAMLab/ORB_SLAM3}} and explored the codebase. I had no prior experience with SLAM systems but did research the current state of multi-agent visual SLAM systems to evaluate the feasibility of my project and to prevent it from being a duplication of prior work.
 
 
 \section{Visual SLAM Background}
@@ -31,7 +31,7 @@ Before developing a distributed multi-agent SLAM system, we must first understan
 \label{sec:visual-slam-visual-odometry}
 To grasp visual SLAM effectively, it is useful to start with a foundational concept – visual odometry (VO). VO is the process of estimating the trajectory of a camera based on the sequence of images produced by it. The core idea is to track features across consecutive images, observing how the features move relative to one another to infer the motion of the camera.
 
-Take, for example, the two images from the KITTI00 dataset \autocite{Geiger2013IJRR} presented in \autoref{fig:vo-example-images}. We can see that \autoref{fig:vo-example-image-b} is taken a few meters in front of \autoref{fig:vo-example-image-a} because the car on the left is closer in the second image, and the roof on the left becomes larger, et cetera. The goal of VO is to compute this change in pose between the two images.
+Take, for example, the two images from the KITTI00 dataset \autocite{Geiger2013IJRR} presented in \autoref{fig:vo-example-images}. We can see that \autoref{fig:vo-example-image-b} is taken a few meters in front of \autoref{fig:vo-example-image-a}.
 
 \begin{figure}[h]
     \centering
@@ -52,7 +52,7 @@ Take, for example, the two images from the KITTI00 dataset \autocite{Geiger2013I
     \label{fig:vo-example-images}
 \end{figure}
 
-The first step towards determining the change in pose is identifying common features in both images. For this, we use feature descriptors, which find recognizable details within the image and represent them as a vector. The ORB descriptor \autocite{6126544} is frequently used in VO and SLAM due to its low computational cost and invariance to rotation and scale, making it our choice for this example.
+The first step towards determining the change in pose is identifying common features in both images. For this, we use feature descriptors, which find recognizable details within the image represented as vectors. The ORB descriptor \autocite{6126544} is frequently used in VO and SLAM due to its low computational cost and invariance to rotation and scale, making it our choice for this example.
 
 \autoref{fig:vo-matches} displays the ORB feature matches between the two images, however it is clear that many of them are incorrect. This is to be expected, as many elements of the images are repeated such as the windows and tree branches.
 
@@ -74,7 +74,7 @@ The first step towards determining the change in pose is identifying common feat
     \end{minipage}%
 \end{figure}
 
-We can remove the majority of incorrect correlations by constraining the matches to the epipolar geometry model – essentially telling the algorithm that the two images are the same scene captured from two different camera poses. Since there are a lot of outliers we use the RANSAC algorithm, later defined in \autoref{sec:ransac}, to fit the data to this epipolar geometry model. This results in the subset of matches shown in \autoref{fig:vo-matches-ransac}, which are far more accurate. For example, we can see that the window on the left is correctly matched in the two images even though there are many similar windows in the images, demonstrating the importance of this step.
+We can remove the majority of incorrect correlations by constraining the matches to the epipolar geometry model – essentially telling the algorithm that the two images are the same scene captured from two different camera poses. Since there are a lot of outliers we use the RANSAC algorithm, later defined in \autoref{sec:ransac}, to fit the data to this epipolar geometry model. This results in the subset of matches shown in \autoref{fig:vo-matches-ransac}, which are far more accurate.
 
 We can now run the seven-point algorithm \autocite{Hartley2004} on the matches to extract the rotation $\mathbf{R}$ and translation $\mathbf{t}$ between the two images, and consequently triangulate the world features found in both images. This is displayed in \autoref{fig:vo-3d-reconstruction}. By continuing this process for all image pairs in a video, we can estimate the trajectory of the camera as it moves through the world. It is important to note that the scale of the world is arbitrary when only using monocular video.
 
@@ -94,13 +94,13 @@ Visual odometry provides a local estimate of trajectories, however, it does not 
 
 \subsection{Tracking}
 \label{sec:visual-slam-tracking}
-The tracking step processes image data to compute the pose of the agent within the map. This step leverages many of the core ideas from visual odometry, using feature descriptors to find matches and fitting them to the epipolar geometry model using RANSAC. However, instead of matching features between consecutive images like visual odometry, we find feature matches between the input image and the map we have built. This is possible because the map is essentially a set of feature descriptors and their estimated position in 3D space, allowing our tracking module to find matches and localize the agent.
+The tracking step processes image data to compute the pose of the agent within the map. This step leverages many of the core ideas from visual odometry, using feature descriptors to find matches and fitting them to the epipolar geometry model using RANSAC. However, instead of matching features between consecutive images like visual odometry, we find feature matches between the input image and the 3D map of feature points we have built.
 
 \subsection{Mapping}
 \label{sec:visual-slam-mapping}
 Mapping extracts the data gathered during the tracking phase to create a 3D representation of the environment. Many popular visual SLAM implementations use a keyframe-based approach, where the map is estimated using only a few select image frames, ignoring the intermediate frames which provide little additional information. This effectively decouples the mapping and tracking processes, allowing us to perform relatively costly but very effective pose graph optimizations.
 
-\textbf{Pose Graph Optimization} is the process of minimizing the errors within our map, typically through the use of a graph optimizer. We represent keyframes and world features as nodes in our graph, with edges representing the constraints between nodes through an attached cost function. For example, if a keyframe observes a feature at position (-0.23, 0.64) in their image, an edge between the keyframe and feature will be created with a cost function that is minimized when the feature is re-projected onto the keyframe at the observed point. Similar edge constraints can be defined between keyframes using IMU measurements or wheel odometry. A graph optimizer can then be used to tweak the keyframe poses and feature locations to minimize the cost functions, therefore improving our map's accuracy.
+\textbf{Pose Graph Optimization} is the process of minimizing the errors within our map, typically through the use of a graph optimizer. We represent keyframes and world features as nodes in our graph, with edges representing the constraints between nodes through an attached cost function. For example, if a keyframe observes a feature at position (-0.23, 0.64) in their image, an edge between the keyframe and feature will be created with a cost function that is minimized when the feature is re-projected onto the keyframe at the observed point. Similar edge constraints can be defined between keyframes using IMU measurements or wheel odometry.
 
 We can intuitively think of the edge constraints as springs (\autoref{fig:gpo-diagram}), all attempting to revert to their preferred length (given by the world observations). The graph optimizer moves the keyframes and features around until the system settles into its lowest energy state, where the map agrees with our observations as closely as possible.
 
@@ -212,32 +212,6 @@ The Kabsch-Umeyama algorithm (\autoref{alg:kabsch-umeyama}) is used to align a s
     \end{algorithmic}
 \end{algorithm}
 
-\subsection{Visual Bag of Words}
-\label{sec:visual-bag-of-words}
-The visual bag of words algorithm is used to vectorize an image based on its features, allowing us to compare how similar two images are. My system utilizes this to efficiently detect potential map merges between agents.
-
-To convert our image to a vector, we must first build a \textit{vocabulary} of features: common and unique features that will each go on to represent a dimension of our image vector. We do this by first extracting features from a large dataset of images and grouping their descriptors using an algorithm such as K-Means clustering. The centers of the clusters can then be used as our feature vocabulary. A visual overview of the process is given in \autoref{fig:bow-vocab}. This vocabulary generation step only needs to be performed once, preferably using a wide variety of representative images (for visual SLAM, this should be images from a variety of environments).
-
-We are now able to vectorize images by counting the number of times each feature within our vocabulary exists in the image (\autoref{fig:bow-vector}).
-
-\begin{figure}[h]
-    \captionsetup{format=plain}
-    \begin{minipage}[t]{0.55\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/bow_vocab.pdf}
-
-        \caption{Process of generating the visual bag of word vocabulary. The center of each cluster is added as a feature in the vocabulary and will represent a distinct vector dimension.}
-        \label{fig:bow-vocab}
-    \end{minipage}\hfill%
-    ~
-    \begin{minipage}[t]{0.4\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/bow.pdf}
-        \caption{Visualization of image vectorization using the visual bag of words method. Images sharing common features result in closely aligned vectors.}
-        \label{fig:bow-vector}
-    \end{minipage}
-\end{figure}
-
 \subsection{RANSAC}
 \label{sec:ransac}
 
@@ -274,6 +248,32 @@ RANdom SAmple Consensus (RANSAC) is an iterative method used to robustly fit a m
     \end{algorithmic}
 \end{algorithm}
 
+\subsection{Visual Bag of Words}
+\label{sec:visual-bag-of-words}
+The visual bag of words algorithm is used to vectorize an image based on its features, allowing us to compare how similar two images are. My system utilizes this to efficiently detect potential map merges between agents.
+
+To convert our image to a vector, we must first build a \textit{vocabulary} of features: common and unique features that will each go on to represent a dimension of our image vector. We do this by first extracting features from a large dataset of images and grouping their descriptors using an algorithm such as K-Means clustering. The centers of the clusters can then be used as our feature vocabulary. A visual overview of the process is given in \autoref{fig:bow-vocab}. This vocabulary generation step only needs to be performed once, preferably using a wide variety of representative images (for visual SLAM, this should be images from a variety of environments).
+
+We are now able to vectorize images by counting the number of times each feature within our vocabulary exists in the image (\autoref{fig:bow-vector}).
+
+\begin{figure}[h]
+    \captionsetup{format=plain}
+    \begin{minipage}[t]{0.55\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/bow_vocab.pdf}
+
+        \caption{Process of generating the visual bag of word vocabulary. The center of each cluster is added as a feature in the vocabulary and will represent a distinct vector dimension.}
+        \label{fig:bow-vocab}
+    \end{minipage}\hfill%
+    ~
+    \begin{minipage}[t]{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/bow.pdf}
+        \caption{Visualization of image vectorization using the visual bag of words method. Images sharing common features result in closely aligned vectors.}
+        \label{fig:bow-vector}
+    \end{minipage}
+\end{figure}
+
 
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
@@ -286,14 +286,12 @@ In addition, an entire suite of infrastructure was created to aid the developmen
 
 Robotics projects work in the physical domain, however testing in the real world requires a large amount of setup and infrastructure. To ensure fast iteration, I decided to use simulations for the majority of my development. This allowed me to easily test my system in various environments and scenarios before deploying it to physical robots.
 
-I chose to use the open-source robotics simulator Webots \autocite{Webots04}, due to its well-documented API and strong community support. The details of integrating Webots into my project are explored in \autoref{sec:simulation-environment}, including the ROS interfaces developed and agent controllers.
+I chose to use the open-source robotics simulator Webots \autocite{Webots04}, due to its well-documented API and realistic renders. The details of integrating Webots into my project are explored in \autoref{sec:simulation-environment}, including the ROS interfaces developed and agent controllers.
 
 \subsection{Testing Infrastructure}
 \label{sec:testing-infrastructure}
 
-Along with being very useful for real-time testing, the simulation software enabled me to record numerous test cases which I have used as regression tests and benchmarks for my system throughout development.
-
-I have built a central management interface (\autoref{sec:central-management-interface}) that allows me to record and replay datasets from the simulation software, among many other functions. There are datasets for testing all core functionality of my SLAM system, which I would run at regular intervals during development to ensure that no features had regressed and to ensure performance was improving.
+Along with being very useful for real-time testing, the simulation software enabled me to record numerous test cases which I have used as regression tests and benchmarks for my system throughout development. There are datasets for testing all core functionality of my SLAM system, which I would run at regular intervals during development to ensure that no features had regressed and to ensure performance was improving.
 
 \subsection{Robot Operating System 2 Communication Middleware}
 \label{sec:ros-2}
@@ -311,9 +309,9 @@ Since every node is abstracted away behind the messaging interface, we can easil
     \label{fig:abstract-camera-interface}
 \end{figure}
 
-Furthermore, using the ROS framework allows my code to be far more portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system with minimal effort. This allows my system to be easily reproducible and not tied to any particular hardware.
+Furthermore, using the ROS framework allows my code to be portable, as anyone can download my nodes, link the camera topics up to their robot's camera, and run my SLAM system with minimal effort.
 
-There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnote[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}} specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
+% There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its improved decentralized properties, which align with the goals of this project. ROS 2 conforms to the Data Distribution Service (DDS)\footnote[1]{\url{https://en.wikipedia.org/wiki/Data_Distribution_Service}} specification, which guarantees a reliable broadcast and, unlike ROS 1, it does not require a leader node when used in a multi-agent setup.
 
 % \subsection{Repository Setup}
 % \label{sec:repository-setup}
@@ -331,13 +329,11 @@ There are two versions of ROS: ROS 1 and ROS 2. I chose to use ROS 2 due to its 
 
 \subsection{Docker and Continuous Integration / Continuous Deployment}
 \label{sec:cicd}
-My GitHub repositories are set up to perform continuous integration via GitHub Actions. Every time code is pushed to the repository, all 5 core packages (\texttt{controller}, \texttt{interfaces}, \texttt{motion\_controller}, \texttt{orb\_slam3\_ros}, \texttt{webots\_sim}) are built to ensure there are no compile time errors.
+My GitHub repositories are set up to perform continuous integration via GitHub Actions. Every time code is pushed to the repository, all 5 core packages (\texttt{centeral\_management\_interface}, \texttt{interfaces}, \texttt{motion\_controller}, \texttt{slam\_system}, \texttt{webots\_sim}) are built to ensure there are no compile time errors.
 
-Additionally, a Docker container is cross-compiled to \texttt{arm64} and uploaded to Docker Hub. These Docker images can then be downloaded to the Cambridge RoboMasters and immediately run. This pipeline is illustrated in \autoref{fig:cicd-diagram}. This greatly speeds up development, as compiling the codebase locally on the Cambridge RoboMasters takes over 20 minutes for each robot.
+Additionally, a Docker container is cross-compiled to \texttt{arm64} and uploaded to Docker Hub. These Docker images can then be pulled to the Cambridge RoboMasters and immediately run (\autoref{fig:cicd-diagram}). This greatly speeds up development, as compiling the codebase locally on the Cambridge RoboMasters takes over 20 minutes for each robot.
 
-Aside from the core packages, we also perform continuous integration as well as continuous deployment for the Raspberry Pi video publisher system. A Docker container is similarly cross-compiled to \texttt{arm64} and uploaded to Docker Hub, and it is automatically deployed to the Raspberry Pis so they will run the latest version of the package.
-
-Continuous deployment makes sense for this use case as the Raspberry Pis are designed to be plug-and-play, starting video streaming as soon as they are turned on. Unlike the Cambridge RoboMasters which are frequently ssh'ed into to pull specific Docker images and start experiments, we want the Raspberry Pis to use the latest software as soon as it is pushed to the GitHub repository.
+Aside from the core packages, we also perform continuous integration as well as continuous deployment for the Raspberry Pi video publisher system. A Docker container is similarly cross-compiled to \texttt{arm64} and uploaded to Docker Hub, and it is automatically deployed to the Raspberry Pis so they will run the latest version of the package. Continuous deployment makes sense for this use case as the Raspberry Pis are designed to be plug-and-play, starting video streaming as soon as they are turned on, and we want them to use the latest software as soon as it is pushed to the GitHub repository.
 
 The ease of use of the Raspberry Pi ROS video publisher platform has made them an invaluable tool and resolves the time-syncing issues previously faced when using the existing cameras in the Prorok Lab.
 
@@ -352,7 +348,7 @@ The ease of use of the Raspberry Pi ROS video publisher platform has made them a
 
 \section{Datasets}
 \label{sec:datasets}
-A variety of industry-standard datasets were utilized to benchmark the performance of my SLAM system, including the EuRoC Machine Hall \autocite{burri2016euroc} and TUM-VI \autocite{8593419} datasets.Further information about each dataset is provided in the \nameref{sec:benchmarking} section.
+A variety of industry-standard datasets were utilized to benchmark the performance of my SLAM system, including the EuRoC Machine Hall \autocite{burri2016euroc} and TUM-VI \autocite{8593419} datasets. Further information about each dataset is provided in the \nameref{sec:benchmarking} section.
 
 In addition to standard datasets, I also used the aforementioned custom datasets generated in the simulated environment for testing.
 

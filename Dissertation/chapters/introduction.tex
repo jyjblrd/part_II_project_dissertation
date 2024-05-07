@@ -1,9 +1,9 @@
 % Well-motivated project with success criteria well-justified.
 
-\label{sec:introduction}
+\label{sec:1}
 Visual Simultaneous Localization and Mapping (visual SLAM) serves as the foundation of countless modern technologies, with self-driving cars, augmented reality devices, and autonomous drones just being a few examples. By using purely visual inputs, visual SLAM is able to create a 3D map of the surroundings while also localizing the camera's position within this map in real-time.
 
-Unlike other SLAM systems which may use an expensive and heavy sensor such as LIDAR, RGB-Depth cameras, or Radar, visual SLAM only requires the ubiquitous camera sensor, allowing the technology to be used in many commercial applications such as Google's ARCore\footnote[1]{\url{https://developers.google.com/ar/develop/fundamentals}}, Boston Dynamic's GraphNav system used on their robot Spot\footnote[2]{\url{https://support.bostondynamics.com/s/article/GraphNav-Technical-Summary}}, and several models of DJI quadcopters\footnote[3]{DOI: 10.1016/j.vrih.2019.09.002}, underscoring the practicality of this research field.
+Unlike other SLAM systems which may use an expensive and heavy sensor such as LIDAR, RGB-Depth cameras, or Radar, visual SLAM only requires the ubiquitous camera sensor, allowing the technology to be used in many commercial applications such as Google's ARCore\footnote[1]{\url{https://developers.google.com/ar/develop/fundamentals}}, Boston Dynamic's GraphNav system used on their robot Spot\footnote[2]{\url{https://support.bostondynamics.com/s/article/GraphNav-Technical-Summary}}, and several models of DJI quadcopters \autocite{zou2019collaborative}, underscoring the practicality of this research field.
 
 \section{Motivation}
 \label{sec:motivation}
@@ -58,6 +58,6 @@ In this project, I: \noparskip
         \caption{TUM-VI Rooms 1-3}
     \end{subfigure}
 
-    \caption{The figures above display sparse maps built by my distributed SLAM system after running industry-standard multi-agent datasets.}
+    \caption{The figures above display sparse maps built by my distributed SLAM system using only monocular videos from industry-standard multi-agent datasets.}
     \label{fig:example-maps}
 \end{figure}

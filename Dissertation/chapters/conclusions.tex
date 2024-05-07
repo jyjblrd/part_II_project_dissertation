@@ -3,20 +3,24 @@
 % Thoughtful personal reflection on the lessons learned.
 
 \label{sec:5}
+This project has exceeded my original success criteria: I have created a distributed visual SLAM system that performs better than comparable state-of-the-art systems and demonstrated real-world performance by deploying it on to physical robots. This is facilitated by a unique approach to the distributed pose graph estimation problem and the addition of features such as relocalization and long-term map reassociation.
+
+In addition, I have developed a full suite of novel infrastructure including visualization, simulation, and evaluation tools, largely due to a lack of existing libraries for the relatively new field of multi-agent SLAM. All these tools, along with my core system, are made open-source with compiled Docker containers also provided.
 
 \section{Future Work}
 \label{sec:future-work}
-My dissertation has presented a system that outperforms comparable state-of-the-art systems, however I beleive that there still is significant untapped potential. Below are some interesting directions to further develop this work.
-
 \textbf{Deep neural network feature extraction and matching.} In recent years there has been an exciting emergence of neural network based feature descriptors. SuperPoint \autocite{detone18superpoint} is an example of such a descriptor, providing impressively robust results. In addition, feature matchers such as LightGlue \autocite{lindenberger2023lightglue} are able to learn the geometric regularities of camera transformations through an end-to-end neural network training process to robustly match features across images, removing the need for the RANSAC \texttt{+} epipolar geometry model feature matching described in the \nameref{sec:visual-slam-visual-odometry} section. Leveraging such technologies in a multi-agent SLAM system may yield improved accuracy and robustness, especially in dynamic environments.
 
-\textbf{Bandwidth optimization.} Ad-hoc mesh networks are necessary for real-world deployment of distributed systems, however they present unique challenges. The network capacity is often limited and some systems prefer broadcast messages over peer-to-peer. It is worth exploring how the data transfer characteristcs of my system can be improved to better suit such a networking environment.
+\textbf{Bandwidth optimization.} Ad-hoc mesh networks are necessary for real-world deployment of distributed systems, however, they present unique challenges. The network capacity is often limited and some systems prefer broadcast messages over peer-to-peer. It is worth exploring how the data transfer characteristics of my system can be improved to better suit such a networking environment.
 
 \section{Lessons Learned}
 \label{sec:lessons-learned}
-The most important lesson learnt from this project is that cutting edge research does not equate to well written or documented code. I committed to using the single agent ORB-SLAM3 system as the foundation for my project early on, however I quickly discovered that it was extremely hard to build upon their codebase. Large chunks of code were commented out without explination, dataflow was hard to decypher, and many function were named, for example, \texttt{localMapping()} and \texttt{localMapping2()}, with different parts of the code arbitrarliy choosing any one of the functions to use. In addition, there is simply a large amount of inherit complexity within the codebase as it is arguably the most advanced single-agent SLAM system avaiable, having been in development for over 6 years by a variety of researchers, and runs on 4 seperate threads.
+The most important lesson learned from this project is that cutting-edge research does not necessarily equate to well-written or documented code. I chose to use the single-agent ORB-SLAM3 system as the foundation of my project due to it being well-cited and widely regarded as the most accurate system available.
 
-ORB-SLAM also did not compile out-of-the-box, requiring me to make modifications to both the makefiles and codebase. Due to the above complexities as well as it being my first time using C++, it took almost month to get ORB-SLAM running, and many more before I began making good progress on the distributed aspect of the project – far longer than I had expected. In summary, I should not have assumed that research code would be easy to compile and build upon, even if it was one of the most well cited and performant systems in the field. %This was quite frustrating, and required me to spend more time on this project than was probably reasonable
+
+However, I quickly discovered that it was extremely hard to build upon their codebase. Large chunks of code were commented out without explanation, dataflow was hard to decipher, and it ran across four threads with poor concurrency control. Due to the above complexities, as well as it being my first time using C++, it took almost a month to get ORB-SLAM running, and many more before I began making good progress on the distributed aspect of the project – far longer than I had expected. In summary, I should have chosen a system based on the code quality and support from the researchers, as opposed to purely its performance.
+
+%This was quite frustrating, and required me to spend more time on this project than was probably reasonable
 
 % \section{Reflection}
 % \label{sec:reflection}
