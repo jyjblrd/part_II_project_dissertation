@@ -173,11 +173,11 @@ In recent years we have seen the emergence of a handful of decentralized multi-a
         \end{tabular}
     }
 
-    \caption{Comparison of popular multi-agent SLAM systems. My SLAM system stands out as one of the only modern decentralized monocular systems available\protect\footnotemark[1].}
+    \caption{Comparison of popular multi-agent SLAM systems. My SLAM system stands out as one of the only modern decentralized monocular systems available.}
     \label{fig:related-work-sensor-configurations}
 \end{figure}
 
-Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem\footnote[2]{Distributed pose graph optimization is the multi-agent extension of the pose graph optimization problem presented in \autoref{sec:visual-slam-mapping}.}. There are various approaches to DPGO. SWARM-SLAM \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents through the use of distributed optimization frameworks such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however, these methods still present a communication overhead and may stall in when presented with unreliable communications.
+Additionally, my system provides a novel approach to the Distributed Pose Graph Optimization (DPGO) problem\footnote[1]{Distributed pose graph optimization is the multi-agent extension of the pose graph optimization problem presented in \autoref{sec:visual-slam-mapping}.}. There are various approaches to DPGO. SWARM-SLAM \autocite{Lajoie_2024} elects a single agent to perform the PGO for the entire swarm, which is simple but has a high communication overhead since all agents have to send their pose estimations before each optimization. Other systems perform DPGO by spreading computation across agents through the use of distributed optimization frameworks such as ARock \autocite{Peng_2016} or Distributed Gauss-Seidel \autocite{DBLP:journals/corr/ChoudharyCNRCD17}, however, these methods still present a communication overhead and may stall in when presented with unreliable communications.
 
 Instead of performing discrete optimization runs, my method of DPGO is performed incrementally. Each agent optimizes its pose graph as external data streams in, with a separate map alignment step. This method has no additional communication overhead, apart from the infrequent map alignment step, however, it comes at the cost of less verifiable global consistency. We evaluate my method's performance in the \nameref{sec:benchmarking} section, demonstrating its very competitive real-world performance. The details of my implementation are presented in the \nameref{sec:decentralized-system-manager} section.
 
@@ -187,7 +187,7 @@ Instead of performing discrete optimization runs, my method of DPGO is performed
 
 \subsection{Kabsch-Umeyama Algorithm}
 \label{sec:kabsch-umeyama-algorithm}
-The Kabsch-Umeyama algorithm (\autoref{alg:kabsch-umeyama}) is used to align a set of target points $Q$ to a set of source points $P$ through a SIM(3) transformation\footnote[1]{A SIM(3) transform is the composition of a translation, rotation, and uniform scale in three dimensional space.}. Within the field of SLAM, this is commonly used to align estimated trajectories with the ground truth, as it may be translated, rotated, and scaled differently to the ground truth. Additionally, this algorithm is used in my multi-agent map alignment process.
+The Kabsch-Umeyama algorithm (\autoref{alg:kabsch-umeyama}) is used to align a set of target points $Q$ to a set of source points $P$ through a SIM(3) transformation\footnote[2]{A SIM(3) transform is the composition of a translation, rotation, and uniform scale in three dimensional space.}. Within the field of SLAM, this is commonly used to align estimated trajectories with the ground truth, as it may be translated, rotated, and scaled differently to the ground truth. Additionally, this algorithm is used in my multi-agent map alignment process.
 
 \begin{algorithm}[H]\small
     \setstretch{1.1}
@@ -275,6 +275,63 @@ We are now able to vectorize images by counting the number of times each feature
 \end{figure}
 
 
+
+\section{Requirements Analysis}
+\label{sec:requirements-analysis}
+After further background reading of the relevant literature and a review of other multi-agent SLAM systems, I broke my project down into the requirements shown in \autoref{fig:risk-analysis}. Features vital to achieving my core deliverables are given high importance, while extensions are given low importance. Additionally, features are given a risk level to help with planning and time allocation.
+
+
+\begin{figure}[h]
+    \centering
+    \adjustbox{valign=t, width=4in}{
+        \def\arraystretch{1.2}
+
+        \newcommand{\highentry}[0]{
+            \colorbox{Red!40!White}{\texttt{ High \vphantom{|g}}}
+        }
+        \newcommand{\mediumentry}[0]{
+            \colorbox{Yellow!50!White}{\texttt{Medium\vphantom{|g}}}
+        }
+        \newcommand{\lowentry}[0]{
+            \colorbox{Green!40!White}{\texttt{\: Low \:\vphantom{|g}}}
+        }
+
+
+        \begin{tabular}{ lcc }
+            \hline
+            \textbf{Feature}                    & \textbf{Importance} & \textbf{Risk} \\
+            \hline
+            Simulation environment              & \highentry          & \lowentry     \\
+            ORB-SLAM3 integration               & \highentry          & \mediumentry  \\
+            Map serialization/deserialization   & \highentry          & \mediumentry  \\
+            Decentralized system state manager  & \highentry          & \lowentry     \\
+            Map merge finder and merger         & \highentry          & \lowentry     \\
+            Handle losing communication         & \highentry          & \lowentry     \\
+            Management interface                & \mediumentry        & \lowentry     \\
+            Distributed pose graph optimization & \lowentry           & \highentry    \\
+            Map compression                     & \lowentry           & \mediumentry  \\
+            Visualization tools                 & \lowentry           & \lowentry     \\
+            Additional sensors                  & \lowentry           & \highentry    \\
+            Intelligent map sharing             & \lowentry           & \mediumentry  \\
+            Motion controller$^1$               & \lowentry           & \mediumentry  \\
+            Real-world deployment$^1$           & \lowentry           & \mediumentry  \\
+            Augmented Reality visualization$^1$ & \lowentry           & \highentry    \\
+        \end{tabular}
+    }
+
+    \caption{Risk analysis. \ $^1$Requirement added after work had begun.}
+    \label{fig:risk-analysis}
+\end{figure}
+
+\subsection{Development Model}
+\label{sec:development-model}
+This project lends itself best to the Spiral Development Model \autocite{59}, as it consists of multiple well-defined features but requires frequent review and planning to decide what direction to push the project forward next. Developing my SLAM system was a large software engineering undertaking, involving the development of 5 ROS packages, an evaluation library, and even hardware. I knew that a rigid plan would quickly fall apart as roadblocks occurred, and therefore, I chose the spiral model as it allowed me to adapt my plan as risks were identified and priorities changed.
+
+After implementing each core feature of my SLAM system, I would evaluate its performance with my testing and evaluation infrastructure to identify any unexpected issues and identify potential risks. This would influence my plan for the next iteration around the spiral, as well as my long-term plan for the project.
+
+A good example of a pivot taken after re-evaluating my project was in late January, when the core features of my project were complete and I was planning the next stage of development. Discussions with my supervisor, as well as my own analysis of the project, revealed that the original extensions were no longer very relevant to my project, as they either had implicitly been achieved while developing my core features or would not yield particularly interesting results. We instead decided to focus on deploying to real robots to demonstrate real-world usability and performance. I am glad that I made this choice, as I believe it greatly strengthens the credibility of my SLAM system.
+
+
 \section{Development Tools \& Frameworks}
 \label{sec:development-tools-and-frameworks}
 Due to this project being a large software engineering undertaking, I knew that a well-structured development plan and carefully chosen frameworks would be essential to its successful implementation. Much thought was put into using frameworks such as ROS and Docker, which led to smooth development and allowed my system to easily be deployed to real-world robots.
@@ -345,6 +402,8 @@ The ease of use of the Raspberry Pi ROS video publisher platform has made them a
     \label{fig:cicd-diagram}
 \end{figure}
 
+Publishing my Docker containers on DockerHub not only simplifies development but also facilitates the easy deployment and evaluation of my system. This approach aligns with the recommendations of Sharafutdinov et al. to avoid contributing to the reproducibility crisis that affects the field of SLAM research \autocite{DBLP:journals/corr/abs-2108-01654}.
+
 
 \section{Datasets}
 \label{sec:datasets}
@@ -352,65 +411,6 @@ A variety of industry-standard datasets were utilized to benchmark the performan
 
 In addition to standard datasets, I also used the aforementioned custom datasets generated in the simulated environment for testing.
 
-\section{Requirements Analysis}
-\label{sec:requirements-analysis}
-After further background reading of the relevant literature and a review of other multi-agent SLAM systems, I broke my project down into the requirements shown in \autoref{fig:risk-analysis}. Features vital to achieving my core deliverables are given high importance, while extensions are given low importance. Additionally, features are given a risk level to help with planning and time allocation.
-
-
-\begin{figure}[h]
-    \centering
-    \adjustbox{valign=t, width=4in}{
-        \def\arraystretch{1.2}
-
-        \newcommand{\highentry}[0]{
-            \colorbox{Red!40!White}{\texttt{ High \vphantom{|g}}}
-        }
-        \newcommand{\mediumentry}[0]{
-            \colorbox{Yellow!50!White}{\texttt{Medium\vphantom{|g}}}
-        }
-        \newcommand{\lowentry}[0]{
-            \colorbox{Green!40!White}{\texttt{\: Low \:\vphantom{|g}}}
-        }
-
-
-        \begin{tabular}{ lcc }
-            \hline
-            \textbf{Feature}                    & \textbf{Importance} & \textbf{Risk} \\
-            \hline
-            Simulation environment              & \highentry          & \lowentry     \\
-            ORB-SLAM3 integration               & \highentry          & \mediumentry  \\
-            Map serialization/deserialization   & \highentry          & \mediumentry  \\
-            Decentralized system state manager  & \highentry          & \lowentry     \\
-            Map merge finder and merger         & \highentry          & \lowentry     \\
-            Handle losing communication         & \highentry          & \lowentry     \\
-            Management interface                & \mediumentry        & \lowentry     \\
-            Distributed pose graph optimization & \lowentry           & \highentry    \\
-            Map compression                     & \lowentry           & \mediumentry  \\
-            Visualization tools                 & \lowentry           & \lowentry     \\
-            Additional sensors                  & \lowentry           & \highentry    \\
-            Intelligent map sharing             & \lowentry           & \mediumentry  \\
-            Motion controller$^1$               & \lowentry           & \mediumentry  \\
-            Real-world deployment$^1$           & \lowentry           & \mediumentry  \\
-            Augmented Reality visualization$^1$ & \lowentry           & \highentry    \\
-        \end{tabular}
-    }
-
-    \caption{Risk analysis. \ $^1$Requirement added after work had begun.}
-    \label{fig:risk-analysis}
-\end{figure}
-
-\subsection{Development Model}
-\label{sec:development-model}
-This project lends itself best to the Spiral Development Model \autocite{59}, as it consists of multiple well-defined features but requires frequent review and planning to decide what direction to push the project forward next. Developing my SLAM system was a large software engineering undertaking, involving the development of 5 ROS packages, an evaluation library, and even hardware. I knew that a rigid plan would quickly fall apart as roadblocks occurred, and therefore, I chose the spiral model as it allowed me to adapt my plan as risks were identified and priorities changed.
-
-After implementing each core feature of my SLAM system, I would evaluate its performance with my testing and evaluation infrastructure to identify any unexpected issues and identify potential risks. This would influence my plan for the next iteration around the spiral, as well as my long-term plan for the project.
-
-A good example of a pivot taken after re-evaluating my project was in late January, when the core features of my project were complete and I was planning the next stage of development. Discussions with my supervisor, as well as my own analysis of the project, revealed that the original extensions were no longer very relevant to my project, as they either had implicitly been achieved while developing my core features or would not yield particularly interesting results. We instead decided to focus on deploying to real robots to demonstrate real-world usability and performance. I am glad that I made this choice, as I believe it greatly strengthens the credibility of my SLAM system.
-
-\subsection{Licensing and Reproducibility}
-\label{sec:licensing-and-reproducibility}
+\section{Licensing}
+\label{sec:licensing}
 All code is available as open-source software on GitHub. The core SLAM system and Multi-Agent EVO library are released under the GPL-3 license \autocite{gplv3} as it builds upon code released under that license. My Raspberry Pi Video Publisher is published under the MIT license \autocite{mit}.
-
-In addition, compiled docker containers are published to DockerHub. This allows for the easy deployment and evaluation of my system, and is in line with the suggestions made by Sharafutdinov et al. to prevent my system from contributing to the reproducibility crisis seen across the field of SLAM research \autocite{DBLP:journals/corr/abs-2108-01654}.
-
-

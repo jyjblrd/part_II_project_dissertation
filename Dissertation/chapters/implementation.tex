@@ -14,7 +14,7 @@
 
 \label{sec:3}
 
-My project presents a novel approach to distributed visual SLAM which yields lower errors than comparable state-of-the-art systems. This improvement is a result of my system's extended capabilities, such as the ability for agents to recover from prolonged losses of localization, a unique approach to the distributed pose graph optimization problem, and algorithms that improve long-term map association \& reuse. The details of my implementation are covered in the following chapter, with its performance discussed in the \nameref{sec:4} chapter.
+My project presents a novel approach to distributed visual SLAM which yields lower errors than comparable state-of-the-art systems. This improvement is a result of my system's extended capabilities, such as the ability for agents to recover from prolonged losses of localization, a unique approach to the distributed pose graph optimization problem, and algorithms that improve long-term map association \& reuse. We will also discuss the real-world deployment of my system and the necessary supporting infrastructure.
 
 In addition, I introduce \textit{Multi-Agent EVO} which, to my knowledge, is the first open-source multi-agent focused SLAM evaluation library, along with numerous other visualization, simulation, and control infrastructure tools.
 
@@ -304,7 +304,7 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
 \label{sec:local-key-frame-inserter}
 As mentioned in the \nameref{sec:external-key-frame-inserter} section, it is essential that the local and external maps stay well connected, sharing the majority of their map points. In other words, we must ensure that the external map data is integrated throughout the entire SLAM pipeline.
 
-The \texttt{Tracking} and \texttt{Mapping} modules, which are responsible for localizing the robot and generating new keyframes, only interact with the \texttt{Map Database}, as seen in the previously shown architectural diagram in \autoref{fig:agent-diagram}. Our external keyframe inserter does all the work of properly reconnecting external map points and merging duplicate map points, leaving the \texttt{Map Database} data structure looking as if all the map points and keyframes were generated locally. This abstracts the \texttt{Tracking} and \texttt{Mapping} modules away from the distributed aspects of the system, ensuring that they fully utilize the external map points when localizing the agent and generating new keyframes.
+The \texttt{Tracking} and \texttt{Mapping} modules, which are responsible for localizing the robot and generating new keyframes, only interact with the \texttt{Map Database}, as seen in the previously shown architectural diagram in \autoref{fig:agent-diagram}. Our external keyframe inserter does all the work of properly reconnecting external map points and merging duplicate map points, leaving the \texttt{Map Database} data structure looking as if all the map points and keyframes were generated locally. This abstracts the \texttt{Tracking} and \texttt{Mapping} modules away from the distributed aspects of the system, ensuring that they fully utilize the external map points when localizing the agent and generating new keyframes (\autoref{fig:well-connected-graph}).
 
 
 \begin{figure}[h]
@@ -312,7 +312,7 @@ The \texttt{Tracking} and \texttt{Mapping} modules, which are responsible for lo
     \includegraphics[width=0.8\linewidth]{figures/map_integration.png}
 
     \caption{Section of the keyframes generated when running the EuRoC Machine Hall dataset. The local (green) and external (red) keyframes are well connected by covisibility links (blue), demonstrating that they are tracking the same map points.}
-    \label{fig:simulation-environment}
+    \label{fig:well-connected-graph}
 \end{figure}
 
 \subsection{Generalizing to $N \geq 3$ Agent Systems}
@@ -569,11 +569,11 @@ After months of development within a simulator, my distributed SLAM system was a
 
 \subsection{Cambridge RoboMaster Platform}
 \label{sec:cambridge-robomaster-platform}
-I chose to deploy my system on the Cambridge RoboMaster, which is an omnidirectional robot platform with a NVidia Jetson Orin for compute. The only sensor used on the RoboMaster was the integrated Raspberry Pi HQ Camera, which provides a 1920x1080 image at 15hz. This was an obvious platform to use as ROS drivers for the camera and wheels had already been developed and a ground-based platform allows for easier testing.
+I chose to deploy my system on the Cambridge RoboMaster, which is an omnidirectional robot platform with a NVidia Jetson Orin for compute (\autoref{fig:robomaster}). The only sensor used on the RoboMaster was the integrated Raspberry Pi HQ Camera, which provides a 1920x1080 image at 15hz. This was an obvious platform to use as ROS drivers for the camera and wheels had already been developed and a ground-based platform allows for easier testing.
 
 As explained in the \nameref{sec:cicd} section, my system is compiled in the cloud and deployed on the robots in Docker containers.
 
-As an aside, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform}}, which has been submitted to the 17th International Symposium on Distributed Autonomous Robotic Systems. My distributed SLAM system was included in the paper, with my system being run in conjunction with my multi-agent collision avoidance motion controller to evaluate the robotics platform's performance and capabilities.
+As an aside, \textbf{I was an author of the paper \textit{The Cambridge RoboMaster: An Agile Multi-Robot Research Platform} \autocite{blumenkamp2024cambridge}}, which has been submitted to the 17th International Symposium on Distributed Autonomous Robotic Systems. My distributed SLAM system was included in the paper, with my system being run in conjunction with my multi-agent collision avoidance motion controller to evaluate the robotics platform's performance and capabilities.
 
 % \subsection{Deploying with Docker}
 % \label{sec:deploying-with-docker}
@@ -610,7 +610,7 @@ As explained in the \nameref{sec:cicd} section, the software for this platform i
         \centering
         \includegraphics[height=2.5in]{figures/robomaster.jpg}
         \caption{Cambridge RoboMaster platform with NVidia Jetson Orin and Raspberry Pi HQ Camera.}
-        \label{fig:tum-traj}
+        \label{fig:robomaster}
     \end{minipage}
 \end{figure}
 
@@ -695,12 +695,12 @@ The \texttt{distributed\_visual\_slam} repository contains the core SLAM system 
             .3 interfaces/\DTcomment{Custom ROS message type definitions\locaddnospace{109}{\locindent}}.
             .3 tools/\DTcomment{Misc. scripts\locaddnospace{42}{\locindent}}.
             .2 .github/workflows/config.yml\DTcomment{CI/CD configuration (\cref{sec:cicd})\locaddnospace{73}{\locindent}}.
-            .2 Dockerfile\DTcomment{Main dockerfile for the project (\cref{sec:docker-containers})\locaddnospace{20}{\locindent}}.
-            .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson (\cref{sec:docker-containers})\locaddnospace{30}{\locindent}}.
+            .2 Dockerfile\DTcomment{Main dockerfile for the project (\cref{sec:cicd})\locaddnospace{20}{\locindent}}.
+            .2 nvidia\_jetson.Dockerfile\DTcomment{Dockerfile for the NVidia Jetson (\cref{sec:cicd})\locaddnospace{30}{\locindent}}.
             .2 ....
         }
     \end{minipage}
-    \caption{Repository overview for my distributed visual SLAM system. Line count does not include non-code files (e.g. camera configurations, simulation worlds, et cetera.) \captionbreak Note that a \texttt{git diff} is given for the \texttt{orb\_slam3} folder, as it is a fork of an existing single-agent SLAM system \autocite{ORBSLAM3_TRO}. The \texttt{git diff} does not include reformatting or mass-deletions of unused files.}
+    \caption{Repository overview for my distributed visual SLAM system. Line count does not include non-code files (e.g. camera configurations, simulation worlds, et cetera.) \captionbreak \texttt{git diff} is used for the \texttt{orb\_slam3} folder, as it is a fork of an existing single-agent SLAM system \autocite{ORBSLAM3_TRO}. The \texttt{git diff} does not include reformatting or mass-deletions of unused files.}
     \label{fig:repo-overview-main}
 \end{figure}
 
@@ -718,7 +718,7 @@ The \texttt{rpi\_ros2\_camera\_publisher} repository holds the code, 3D files, a
             .3 send\_images.py\DTcomment{\locaddnospace{132}{\locsmallindent}}.
             .2 .github/workflows/config.yml\DTcomment{CI/CD configuration (\cref{sec:cicd})\locaddnospace{36}{\locsmallindent}}.
             .2 3D\_files/.
-            .2 Dockerfile\DTcomment{Main dockerfile for the project (\cref{sec:docker-containers})\locaddnospace{10}{\locsmallindent}}.
+            .2 Dockerfile\DTcomment{Main dockerfile for the project (\cref{sec:cicd})\locaddnospace{10}{\locsmallindent}}.
             .2 docker-rpi-cam.service\DTcomment{Systemctl service file\locaddnospace{11}{\locsmallindent}}.
             .2 ....
         }
