@@ -14,9 +14,9 @@
 
 \label{sec:3}
 
-My project presents a novel approach to distributed visual SLAM which yields lower errors than comparable state-of-the-art systems. This improvement is a result of my system's extended capabilities, such as the ability for agents to recover from prolonged losses of localization, a unique approach to the distributed pose graph optimization problem, and algorithms that improve long-term map association \& reuse. We will also discuss the real-world deployment of my system and the necessary supporting infrastructure.
+My project presents a novel approach to distributed visual SLAM which yields lower errors than comparable state-of-the-art systems. This improvement is a result of my system's extended capabilities, such as the ability for agents to recover from prolonged losses of localization, a unique approach to the distributed pose graph optimization problem, and algorithms that improve long-term map association \& reuse. We also discuss the real-world deployment of my system and the necessary supporting infrastructure.
 
-In addition, I introduce \textit{Multi-Agent EVO} which, to my knowledge, is the first open-source multi-agent focused SLAM evaluation library, along with numerous other visualization, simulation, and control infrastructure tools.
+In addition, I introduce \textit{Multi-Agent EVO} which, to my knowledge, is the first open-source multi-agent focused SLAM evaluation library, along with numerous other visualization, simulation, and control tools.
 
 \section{Agent Architectural Overview}
 \label{sec:architectural-overview}
@@ -83,15 +83,17 @@ Each agent's \texttt{Decentralized System Manager} maintains a state machine for
 
 \subsection{Map Serialization and Deserialization}
 \label{sec:map-serialization-and-deserialization}
-Map serialization and deserialization are essential and non-trivial components of this SLAM system, enabling agents to share their maps across the network. For this task, I used the Boost \autocite{boostLibrary} Serialization C++ library since it supports standard library collections and other common classes.
+Map serialization and deserialization are essential and non-trivial components of this SLAM system, enabling agents to share their maps across the network. For this task, I used the Boost Serialization C++ library \autocite{boostLibrary} since it supports standard library collections and other common classes.
 
-As discussed in \autoref{sec:datastructures}, maps contain keyframes and map points. Individually, these objects are relatively easy to serialize with boost – in fact, the single agent SLAM program my system is based on already supported saving and loading maps allowing me to leverage some of their serialization helper functions. To serialize these objects we simply need to define a serialization scheme for each class, describing which instance variables should be serialized and which shouldn't. Strategically selecting only the parameters that need to be serialized allows us to cut back on communication overhead. For example, there is no need for us to serialize a keyframe's raw image, as it is not used in the rest of our SLAM pipeline.
+As discussed in \autoref{sec:datastructures}, maps contain keyframes and map points. Individually, these objects are relatively easy to serialize with boost – in fact, the single agent SLAM program my system is based on already supported saving and loading maps allowing me to leverage some of their serialization helper functions. To serialize these objects we simply need to define a serialization scheme for each class, describing which instance variables should be serialized and which shouldn't.
+
+% Strategically selecting only the parameters that need to be serialized allows us to cut back on communication overhead. For example, there is no need for us to serialize a keyframe's raw image, as it is not used in the rest of our SLAM pipeline.
 
 Complexities arise when we try to serialize/deserialize the connections between these objects, especially when we are only sending map fragments as we may be required to ``relink'' deserialized objects with objects in our local map. We manage these connections by giving every keyframe and map point a universal unique identifier (UUID), allowing us to use these UUIDs as references to a specific object in our multi-agent system. We use UUIDs since they do not require a centralized server or any communication with our peers to assign a unique ID to every object\footnote[1]{While not \textit{verifiablly} unique, UUIDs are unique within practical limits. A commonly cited anecdote is that it is far more likely for a cosmic ray to cause a bug than a UUID collision.}.
 
 % For example, if we send a new keyframe $k$ and its map points $M_k$ to an external agent, due to the many-to-many relationship between keyframes and map points, some of the map points in $M_k$ may have already been sent before. We can define $M_k = M_{k\_sent} \cup M_{k\_unsent}$, where $M_{k\_sent}$ are the map points that have already been sent to the external agent and $M_{k\_unsent}$ are the ones that have not. Map points in $M_{k\_sent}$ will need to be connected to $k$ when it is deserialized by the external agent, and map points in $M_{k\_unsent}$ will need to be sent to the external agent and connected to any existing keyframes in the external map that observe the map points. These connections are further explained in the \nameref{sec:external-key-frame-inserter} section, particularly \autoref{fig:external-keyframe-inserter}.
 
-This method of using UUIDs as references is used to rebuild all connections after deserialization, including the keyframe-to-keyframe connections that build the co-visibility graph and many others which I have not had the space to discuss in this dissertation. A good example of connection rebuilding is later given in \autoref{fig:external-keyframe-inserter}, which shows how external map fragments are relinked with the local map.
+This method of using UUIDs as references is used to rebuild all connections after deserialization, including the keyframe-to-keyframe connections that build the co-visibility graph and many others that I have not had the space to discuss in this dissertation. A good example of connection rebuilding is later given in \autoref{fig:external-keyframe-inserter}, which shows how external map fragments are relinked with the local map.
 
 \subsection{External Map Merge Finder}
 \label{sec:external-map-merge-finder}
@@ -118,8 +120,8 @@ This method gives a recall of almost 100\%, at the cost of potentially lower pre
     \begin{algorithmic}[1]
         \Require{VisualWords$_{ext}$: Set containing external keyframe's visual words}
         \Ensure{Success: Boolean value signaling if a merge is possible based on visual words}
-        \State (MergeScore$_{ext}$, BestMatchKeyFrame) $\gets$ CalculateMergeScore(VisualWords$_{ext}$)
-        \State (MergeScore$_{baseline}$, $\underbar{\ \ }$) $\gets$ CalculateMergeScore(BestMatchKeyFrame's visual words)
+        \State (MergeScore$_{ext}$, BestMatchKeyFrame) $\gets$ \textsc{CalculateMergeScore}(VisualWords$_{ext}$)
+        \State (MergeScore$_{baseline}$, $\underbar{\ \ }$) $\gets$ \textsc{CalculateMergeScore}(BestMatchKeyFrame's visual words)
         \State Success $\gets$ MergeScore$_{ext}$ $\geq$ 0.7 $\times$ MergeScore$_{baseline}$
     \end{algorithmic}
 \end{algorithm}
@@ -247,7 +249,7 @@ The external keyframe inserter is run whenever we have spare cycles on the CPU, 
 (A concise visual overview of the process is presented in \autoref{fig:external-keyframe-inserter})
 
 \begin{enumerate}
-    \item \textbf{Pop external keyframe $k_{ext}$ from front of queue.}
+    \item \textbf{Pop $k_{ext}$ from the front of the external keyframe queue.}
     \item \textbf{Move $k_{ext}$ and its external observed map points $M_{ext}$ to the local map}. \\
           Since the local and external agents are merged, they are in the same coordinate frame. Therefore, we can move $k_{ext}$ and $M_{ext}$ to our local map without any transformations.\footnote[1]{I had previously used a \textit{keyframe anchor} method, where instead of $k_{ext}$ having an absolute pose we would send its pose relative to the previous $k_{ext}$. The thought process behind this was to prevent minor misalignments between the local and external maps from preventing external keyframes from properly integrating with the local map. However, experimental testing showed that this method instead caused the local and external maps to frequently diverge.}
     \item \textbf{Relink $k_{ext}$ with co-visible keyframes and observed map points in the local map}. \\
@@ -311,7 +313,7 @@ The \texttt{Tracking} and \texttt{Mapping} modules, which are responsible for lo
     \centering
     \includegraphics[width=0.8\linewidth]{figures/map_integration.png}
 
-    \caption{Section of the keyframes generated when running the EuRoC Machine Hall dataset. The local (green) and external (red) keyframes are well connected by covisibility links (blue), demonstrating that they are tracking the same map points.}
+    \caption{Section of the keyframes generated when running the EuRoC Machine Hall dataset. The local (green) and external (red) keyframes are well connected by co-visibility links (blue), demonstrating that they are tracking the same map points.}
     \label{fig:well-connected-graph}
 \end{figure}
 
@@ -325,15 +327,13 @@ In the case where agents can lose communication with one another, we also assume
 
 Initially, every agent pair is unmerged so every state in $S$ is set as \textit{unmerged} and $G=\{\{agent_1\}, \{agent_2\}, ..., \{agent_N\}\}$
 
-A key insight of my distributed SLAM system is to delegate all merge operations to group leaders. This is significant, as the computational load of these merge operations scale proportional to the square of the number of agents involved, and in most use cases the number of group leaders quickly drops to be much lower than the total number of agents. Additionally, having all merge operations performed by the group leader prevents potential race conditions introduced by communication latency within a group, for example, two agents within a group merging with different agents at the same time.
+A key insight of my distributed SLAM system is to delegate all merge operations to group leaders. This is significant, as the computational load and bandwidth requirements of these merge operations scale proportional to the square of the number of agents involved, and in most use cases the number of group leaders quickly drops to be much lower than the total number of agents. Additionally, having all merge operations performed by the group leader prevents potential race conditions introduced by communication latency within a group, for example, two agents within a group merging with different agents at the same time.
 
-As discussed in the \hyperref[sec:external-map-merge-finder]{External Map Merge Finder} and \hyperref[sec:external-map-merger]{External Map Merger} sections, the two operations needed to merge are (1) exchanging visual words to identify visual overlap and therefore merge opportunities and (2) sending over the map and attempting a full map merge. We must therefore get our group leaders to perform these tasks to identify merges between groups.
+As discussed in the \hyperref[sec:external-map-merge-finder]{External Map Merge Finder} and \hyperref[sec:external-map-merger]{External Map Merger} sections, the two operations needed to merge are (1) exchanging visual words to identify visual overlap and therefore merge opportunities and (2) sending over the map and attempting a full map merge. Our group leaders must therefore perform these tasks on behalf of their groups.
 
 The ``visual word merge finder'' operation can be delegated to group leaders by having them send the visual words of all keyframes generated by agents within their group to all other group leaders. This introduces no additional intra-group communication, as all agents within a group already send each other all new keyframes.
 
 Moving on to the ``full map merge'' operation, once a pair of group leaders $(agent_n, agent_m)$ (with $n<m$) have found a potential merge using visual words, the agent with the smaller ID ($agent_n$) sends its full map to the agent with the larger ID ($agent_m$), who attempts a full map merge. If the merge is successful, $agent_m$ will now be in $agent_n$'s coordinate frame. $agent_m$ will then send the transform from $agent_m$ to $agent_n$'s coordinate frame $T_{m \to n}$ to all the agents in its group, allowing them to also change to $agent_n$'s coordinate frame. After this has been completed, $agent_m$'s group merges into $agent_n$'s group by updating $S$ according to \autoref{eq:state-update-equation}, and agents begin exchanging keyframes to update the unified map.
-
-This approach requires all agents to know the current groups and group leaders within the decentralized system, which is achieved by broadcasting all successful merge messages on the \texttt{/successfully\_merged} ROS topic for everyone to see.
 
 \begin{equation}
     \begin{gathered} \label{eq:state-update-equation}
@@ -341,7 +341,9 @@ This approach requires all agents to know the current groups and group leaders w
     \end{gathered}
 \end{equation}
 
-This whole process is perhaps best represented in visual form by the simple 3-agent merge example given in \autoref{fig:3-agent-merge} which shows the messages sent between the agents.
+This approach requires all agents to know the current groups and group leaders within the decentralized system, which is achieved by broadcasting all successful merge messages on the \texttt{/successfully\_merged} ROS topic for everyone to see.
+
+This whole process is perhaps best represented in visual form by the simple 3-agent merge example given in \autoref{fig:3-agent-merge} which shows the messages sent between agents.
 
 \begin{figure}[h]
     \centering
@@ -372,7 +374,7 @@ We use an \textit{additive increase multiplicative decrease} methodology to cont
 
 \subsection{Losing Localization / Connection}
 \label{sec:losing-localization-or-connection}
-An agent can lose localization within the shared map (for example, if its camera is blocked for a short period of time). When this happens, the agent signals to its peers that it has lost localization and they stop sharing new keyframes. Since the agent has lost localization in the shared map, it begins building a private map of the new area it is observing. If it revisits an area of the shared map, it will merge its private map with the shared map and signal to its peers that it has regained localization. Keyframe sharing will then resume, with the agents sharing keyframes collected while localization was lost. This allows the new area explored while localization was lost to expand the shared map.
+An agent can lose localization within the shared map (for example, if its camera is blocked for a short period of time). When this happens, the agent signals to its peers that it has lost localization and they stop sharing new keyframes. Since the agent has lost localization in the shared map, it begins building a private map of the new area it is observing. If it revisits an area of the shared map, it will merge its private map with the shared map and signal to its peers that it has regained localization. Keyframe sharing will then resume, with the agents' unsent keyframes being sent to one another. This allows the new area explored while localization was lost to expand the shared map.
 
 Losing connection is very similar, however, a new private map does not need to be built. Instead, the agents simply stop sharing keyframes until the connection is regained, at which point the agents will update each other with the stored-up unsent keyframes.
 
@@ -429,7 +431,7 @@ $J_s$ and $J_d$ penalize collisions with static objects and dynamic objects resp
 \end{flalign}
 where $d_i^{static}$ is the distance between the agent and the $i-th$ static obstacle, and $d_i^{dynamic}$ is the distance between the agent and the $i-th$ dynamic obstacle. $Q_s>0$ and $Q_d>0$ are weights that define how adverse our agents are to collision with static and dynamic obstacles respectively. A visualization of how these parameters affect the cost function is presented in \autoref{fig:nmpc_cost_function-a}.
 
-Additionally, we define $s_s$ and $s_d$ as scale normalizing parameters that ensure the minima of $J_x + J_s$ and $J_x + J_d$ are invariant to $Q_s$ and $Q_d$. To calculate $s_s$, we first find the positive minima $x_{min}$ of $J_x + J_s$ in the worst case where $d_i^{static} = J_x$ (ie. the static obstacle and $x_{ref}$ are in the same place), with $s=1$. This gives us $x_{min}$ as defined in \autoref{eq:x-min}. Our scaling factor can then be defined as $s_s = \frac{r}{x_{min}}$, which sets the positive minima of $J_x + J_s$ to be $r$ in the above situation. The calculation of $s_d$ is symmetric, simply using $Q_d$ instead of $Q_s$.
+Additionally, we define $s_s$ and $s_d$ as scale normalizing parameters that ensure the minima of $J_x + J_s$ and $J_x + J_d$ are invariant to $Q_s$ and $Q_d$. To calculate $s_s$, we first find the positive minima $x_{min}$ of $J_x + J_s$ in the worst case where $d_i^{static} = J_x$ (ie. the static obstacle and $x_{ref}$ are at the same place), with $s=1$. This gives us $x_{min}$ as defined in \autoref{eq:x-min}. Our scaling factor can then be defined as $s_s = \frac{r}{x_{min}}$, which sets the positive minima of $J_x + J_s$ to be $r$ in the above situation. The calculation of $s_d$ is symmetric, simply using $Q_d$ instead of $Q_s$.
 
 \begin{equation} \label{eq:x-min}
     x_{min} = \ln \left( \frac{\sqrt{Q_s^2-4Q_s}+Q_s}{2}-1 \right)
@@ -550,18 +552,28 @@ This method also allows us to retroactively transform trajectories into $agnet_0
 \label{sec:simulation-environment}
 The \nameref{sec:webots-simulator} section in the \nameref{sec:2} chapter explains the motivation behind using a simulator. Essentially, leveraging simulations enables much faster iterations and the ability to test my system in a variety of environments. This section will focus on the details of integrating the simulation software into my system.
 
-Webots is an open-source 3D robotics simulator with realistic rendering, which is essential for testing a visual SLAM system. Unfortunately, Webots can not be built for the ARM Ubuntu VM I used for development, therefore it had to be run on MacOS, with data being streamed to the Ubuntu VM through a websocket bridge developed by Webots.
+Webots \autocite{Webots04} is an open-source 3D robotics simulator with realistic rendering, which is essential for testing a visual SLAM system. Unfortunately, Webots can not be built for the ARM Ubuntu VM I used for development, therefore it had to be run on MacOS, with data being streamed to the Ubuntu VM through a websocket bridge developed by Webots.
 
 I have developed a ROS node that exposes the Webots camera and agent controls as ROS topics, following the abstract robot interface specifications. This allows my SLAM system to process the camera streams, and the motion controller / central management interface to control the agent's velocity in the simulated environment.
 
-
 \begin{figure}[h]
     \centering
-    \includegraphics[trim=5cm 5cm 5cm 5cm, scale=0.18]{figures/simulation_environment.pdf}
+    \captionsetup{format=plain}
+    \begin{minipage}[t]{0.575\linewidth}
+        \centering
+        \includegraphics[trim=5cm 4.5cm 5cm 5cm, width=\linewidth]{figures/simulation_environment.pdf}
 
-    \caption{Simulation system architecture. The Webots application runs on MacOS and is exposed to the Ubuntu VM as ROS topics by the custom \texttt{Webots Client} ROS node.}
-    \label{fig:simulation-environment}
+        \caption{Simulation system architecture. The Webots application runs on MacOS and is exposed to the Ubuntu VM as ROS topics by the custom \texttt{Webots Client} ROS node.}
+        \label{fig:simulation-environment}
+    \end{minipage}\hfill%
+    ~
+    \begin{minipage}[t]{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/webots_render.png}
+        \caption{Webots render of the ``Apartment'' environment.}
+    \end{minipage}
 \end{figure}
+
 
 \section{Real World Implementation}
 \label{sec:real-world-implementation}
@@ -591,7 +603,7 @@ The hardware for this platform consists of a Raspberry Pi 4b, Raspberry Pi Camer
 
 ROS does not support streaming videos across a network, instead requiring frames to be sent as individual compressed images. This results in significant computational overhead, with a naive ROS video publisher implementation only being able to stream at 10 frames per second on the Raspberry Pi. To enable a 30-frame-per-second video stream, my implementation uses three threads. The first thread captures images from the camera, the second encodes them as a JPEG image, and the third publishes the images to a ROS topic.
 
-As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository.
+As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. The ease of use of the Raspberry Pi ROS video publisher platform has made them an invaluable tool and resolves the time-syncing issues previously faced when using the existing cameras in the Prorok Lab.
 
 % As explained in the \nameref{sec:cicd} section, the software for this platform is entirely dockerized and a CI/CD pipeline has been implemented to automatically build and deploy the software to all Raspberry Pi video publishers when new code is pushed to the GitHub repository. This is particularly useful, as it is designed as a plug-and-play system that starts streaming video data as soon as it is turned on.
 
@@ -629,7 +641,7 @@ To my knowledge, this system is the first of its kind to be used in such a proje
     \centering
     \includegraphics[width=0.8\linewidth]{figures/ar_overlay_map_points.png}
 
-    \caption{Features tracked by the RoboMaster overlayed over an ``external perspective" handheld video from my Raspberry Pi Video Publisher. This visualization makes it clear that my SLAM system is tracking the corners of boxes, letters on the Prorok Lab banner, and the floor vents. \captionbreak Note that the features are generated by the RoboMaster, and then reprojected onto the video captured by the Raspberry Pi as it moves through space. This is made clear in the video demonstration of this feature at TODOmin of the supplementary video\protect\footnotemark[1].}
+    \caption{Features tracked by the RoboMaster overlayed over an ``external perspective" handheld video from my Raspberry Pi Video Publisher. This visualization makes it clear that my SLAM system is tracking the corners of boxes, letters on the Prorok Lab banner, and the floor vents. \captionbreak Note that the features are generated by the RoboMaster, and then reprojected onto the video captured by the Raspberry Pi as it moves through space. This is made clear in the video demonstration of this feature at 2m25s of the supplementary video\protect\footnotemark[1].}
     \label{fig:ar-overlay-map-points}
 \end{figure}
 \footnotetext[1]{Supplementary video URL: \url{https://cam-diss.s3.amazonaws.com/video.mp4}}
@@ -661,7 +673,7 @@ To my knowledge, this system is the first of its kind to be used in such a proje
 
 My dissertation consists of five ROS packages, a Python library, 3D designs, and dozens more miscellaneous files, amounting to \textbf{35,000\texttt{+} lines of code} across \textbf{108 files} and \textbf{three repositories}. While lines of code and number of files are a poor measurement of complexity, I still hope to illustrate the scale of this software engineering project. The following section gives a brief overview of my codebase's structure.
 
-The \texttt{distributed\_visual\_slam} repository contains the core SLAM system and all the infrastructure needed to run it. This includes five ROS packages: \texttt{slam\_system}, \texttt{motion\_controller}, \texttt{webots\_sim}, \texttt{central\_management\_interface}, and \texttt{interfaces}, which all follow the standard ROS package structure. \texttt{slam\_system} and \texttt{interfaces} are written in C++ and built using CMake, while the remaining packages are Python-based. Details of the repository's structure and line counts can be found in \autoref{fig:repo-overview-main}.
+The \texttt{distributed\_visual\_slam} repository (\autoref{fig:repo-overview-main}) contains the core SLAM system and all the infrastructure needed to run it. This includes five ROS packages: \texttt{slam\_system}, \texttt{motion\_controller}, \texttt{webots\_sim}, \texttt{central\_management\_interface}, and \texttt{interfaces}, which all follow the standard ROS package structure. \texttt{slam\_system} and \texttt{interfaces} are written in C++ and built using CMake, while the remaining packages are Python-based.
 
 \begin{figure}[h]
     \centering
@@ -700,11 +712,11 @@ The \texttt{distributed\_visual\_slam} repository contains the core SLAM system 
             .2 ....
         }
     \end{minipage}
-    \caption{Repository overview for my distributed visual SLAM system. Line count does not include non-code files (e.g. camera configurations, simulation worlds, et cetera.) \captionbreak \texttt{git diff} is used for the \texttt{orb\_slam3} folder, as it is a fork of an existing single-agent SLAM system \autocite{ORBSLAM3_TRO}. The \texttt{git diff} does not include reformatting or mass-deletions of unused files.}
+    \caption{Repository overview for my distributed visual SLAM system. Line count does not include non-code files (e.g. camera configurations, simulation worlds, et cetera.) \captionbreak \texttt{git diff} is used for the \texttt{orb\_slam3} folder, as it is a fork of an existing single-agent SLAM system \autocite{ORBSLAM3_TRO}. The \texttt{git diff} excludes reformatting and the mass deletion of unused files.}
     \label{fig:repo-overview-main}
 \end{figure}
 
-The \texttt{rpi\_ros2\_camera\_publisher} repository holds the code, 3D files, and CI/CD configuration for the Raspberry Pi Camera Publisher system. The provided Systemctl service file configures the Raspberry Pi to pull and run the latest docker image on startup. The repository structure is illustrated by \autoref{fig:repo-overview-rpi-video}
+The \texttt{rpi\_ros2\_camera\_publisher} repository (\autoref{fig:repo-overview-rpi-video}) holds the code, 3D files, and CI/CD configuration for the Raspberry Pi Camera Publisher system. The provided Systemctl service file configures the Raspberry Pi to pull and run the latest docker image on startup.
 
 \begin{figure}[h]
     \centering
@@ -727,7 +739,7 @@ The \texttt{rpi\_ros2\_camera\_publisher} repository holds the code, 3D files, a
     \label{fig:repo-overview-rpi-video}
 \end{figure}
 
-The \texttt{multi\_agent\_evo} repository, a modified version of the EVO library, supports the evaluation of multi-agent SLAM systems. The changes made to EVO are shown in \autoref{fig:repo-overview-multi-agent-evo}.
+The \texttt{multi\_agent\_evo} repository (\autoref{fig:repo-overview-multi-agent-evo}) is a modified version of the EVO library \autocite{grupp2017evo} that supports the evaluation of multi-agent SLAM systems.
 
 \begin{figure}[h]
     \centering
@@ -742,7 +754,7 @@ The \texttt{multi\_agent\_evo} repository, a modified version of the EVO library
             .4 trajectory.py\DTcomment{Class for operating on trajectories\locdiff{115}{4}{\locsmallindent}}.
             .4 ....
             .3 tools/\DTcomment{\locdiff{272}{49}{\locsmallindent}}.
-            .4 coordinate\_frame\_decoder.py\DTcomment{Parse coordinate frame data\locadd{202}{\locsmallindent}}.
+            .4 coordinate\_frame\_decoder.py\DTcomment{Parse multi-agent coordinate frame data\locadd{202}{\locsmallindent}}.
             .4 ....
             .2 ....
         }
